@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backpropagation — CS Animations</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../../index.html" class="nav__logo">
+      <span>&gt;</span> cs_animations
+    </a>
+    <ul class="nav__links">
+      <li><a href="../../index.html#categories">Browse</a></li>
+    </ul>
+  </nav>
+
+  <div class="animation-page">
+    <div class="animation-page__header">
+      <div class="animation-page__breadcrumb">
+        <a href="../../index.html">home</a>
+        <span class="sep">/</span>
+        <a href="index.html">neural-networks</a>
+        <span class="sep">/</span>
+        <span>backpropagation</span>
+      </div>
+      <h1 class="animation-page__title">Backpropagation</h1>
+      <p class="animation-page__subtitle">
+        Visualize how gradients flow backward through a neural network to update weights during training.
+      </p>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="controls__btn" id="btnForward">Forward Pass</button>
+      <button class="controls__btn" id="btnBackward">Backward Pass</button>
+      <button class="controls__btn controls__btn--primary" id="btnFull">&#9654; Full Step</button>
+      <button class="controls__btn" id="btnReset">Reset</button>
+      <div class="controls__separator"></div>
+      <span class="controls__label">Speed</span>
+      <input type="range" class="controls__slider" id="speedSlider" min="1" max="100" value="50">
+    </div>
+
+    <div class="info-panel">
+      <div class="info-block">
+        <h4 class="info-block__title">Complexity</h4>
+        <div class="info-block__content">
+          <p>Time: <code>O(n)</code> per pass, where n = number of weights</p>
+          <p>Forward pass computes activations layer by layer</p>
+          <p>Backward pass computes gradients via the chain rule</p>
+          <p style="margin-top:0.75rem; color: var(--text-muted);">The fundamental algorithm that enables deep learning.</p>
+        </div>
+      </div>
+      <div class="info-block">
+        <h4 class="info-block__title">How It Works</h4>
+        <div class="info-block__content">
+          <div class="step"><span class="step-num">01</span> Forward: input propagates through layers</div>
+          <div class="step"><span class="step-num">02</span> Compute loss at the output</div>
+          <div class="step"><span class="step-num">03</span> Backward: compute gradients using chain rule</div>
+          <div class="step"><span class="step-num">04</span> Update weights: w -= learning_rate * gradient</div>
+          <div class="step"><span class="step-num">05</span> Repeat until loss converges</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    cs_animations — built for learning
+  </footer>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const COLORS = {
+      primary:   '#cbb2ed',
+      accent:    '#f7cc93',
+      success:   '#b3e4a5',
+      error:     '#ef8aa6',
+      text:      '#e8e4f0',
+      textMuted: '#7a7494',
+      bg:        '#191623',
+      surface:   '#221e30',
+      border:    '#362f4a',
+    };
+
+    // Network: 2 input, 3 hidden, 1 output
+    const layers = [2, 3, 1];
+    let weights = [];   // weights[l][j][i]
+    let biases = [];    // biases[l][j]
+    let activations = []; // activations[l][j]
+    let gradients = [];   // gradient values for display
+    let speed = 50;
+    let running = false;
+    let phase = 'idle'; // 'idle', 'forward', 'backward'
+    let animProgress = 0;
+    let activeLayer = -1;
+    let activeDir = 'none'; // 'forward' or 'backward'
+    let iteration = 0;
+    let loss = 0;
+    let target = 1;
+    let stepQueue = [];
+
+    function resize() {
+      const container = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = container.clientWidth * dpr;
+      canvas.height = 500 * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = container.clientWidth + 'px';
+      canvas.style.height = '500px';
+    }
+
+    function getDelay() {
+      return Math.max(10, 500 - (speed / 100) * 490);
+    }
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function sigmoid(x) {
+      return 1 / (1 + Math.exp(-x));
+    }
+
+    function initNetwork() {
+      weights = [];
+      biases = [];
+      activations = [];
+      gradients = [];
+
+      for (let l = 0; l < layers.length; l++) {
+        activations[l] = new Array(layers[l]).fill(0);
+        if (l > 0) {
+          weights[l] = [];
+          biases[l] = new Array(layers[l]).fill(0);
+          gradients[l] = [];
+          for (let j = 0; j < layers[l]; j++) {
+            weights[l][j] = [];
+            gradients[l][j] = [];
+            for (let i = 0; i < layers[l - 1]; i++) {
+              weights[l][j][i] = (Math.random() - 0.5) * 2;
+              gradients[l][j][i] = 0;
+            }
+            biases[l][j] = (Math.random() - 0.5) * 0.5;
+          }
+        }
+      }
+
+      // Random input
+      activations[0][0] = Math.random();
+      activations[0][1] = Math.random();
+      target = Math.random() > 0.5 ? 1 : 0;
+    }
+
+    function forwardPass() {
+      for (let l = 1; l < layers.length; l++) {
+        for (let j = 0; j < layers[l]; j++) {
+          let sum = biases[l][j];
+          for (let i = 0; i < layers[l - 1]; i++) {
+            sum += weights[l][j][i] * activations[l - 1][i];
+          }
+          activations[l][j] = sigmoid(sum);
+        }
+      }
+      const output = activations[layers.length - 1][0];
+      loss = 0.5 * (target - output) * (target - output);
+    }
+
+    function backwardPass() {
+      const L = layers.length - 1;
+      const output = activations[L][0];
+      const dOutput = (output - target) * output * (1 - output);
+
+      // Output layer gradients
+      for (let i = 0; i < layers[L - 1]; i++) {
+        gradients[L][0][i] = dOutput * activations[L - 1][i];
+      }
+
+      // Hidden layer gradients
+      if (L > 1) {
+        for (let j = 0; j < layers[L - 1]; j++) {
+          const a = activations[L - 1][j];
+          const dHidden = dOutput * weights[L][0][j] * a * (1 - a);
+          for (let i = 0; i < layers[L - 2]; i++) {
+            gradients[L - 1][j][i] = dHidden * activations[L - 2][i];
+          }
+        }
+      }
+
+      // Update weights
+      const lr = 0.5;
+      for (let l = 1; l < layers.length; l++) {
+        for (let j = 0; j < layers[l]; j++) {
+          for (let i = 0; i < layers[l - 1]; i++) {
+            weights[l][j][i] -= lr * gradients[l][j][i];
+          }
+          biases[l][j] -= lr * gradients[l][j][0] * 0.1; // simplified bias update
+        }
+      }
+
+      iteration++;
+    }
+
+    function generateSteps(mode) {
+      const steps = [];
+      if (mode === 'forward' || mode === 'full') {
+        for (let l = 1; l < layers.length; l++) {
+          steps.push({ type: 'forwardLayer', layer: l });
+        }
+        steps.push({ type: 'computeLoss' });
+      }
+      if (mode === 'backward' || mode === 'full') {
+        for (let l = layers.length - 1; l >= 1; l--) {
+          steps.push({ type: 'backwardLayer', layer: l });
+        }
+        steps.push({ type: 'updateWeights' });
+      }
+      return steps;
+    }
+
+    function getNodePositions() {
+      const w = canvas.clientWidth;
+      const h = 500;
+      const positions = [];
+      const layerSpacing = (w - 160) / (layers.length - 1);
+
+      for (let l = 0; l < layers.length; l++) {
+        positions[l] = [];
+        const x = 80 + l * layerSpacing;
+        const nodeSpacing = Math.min(80, (h - 120) / (layers[l] + 1));
+        const startY = h / 2 - (layers[l] - 1) * nodeSpacing / 2;
+
+        for (let j = 0; j < layers[l]; j++) {
+          positions[l][j] = { x, y: startY + j * nodeSpacing };
+        }
+      }
+      return positions;
+    }
+
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = 500;
+      ctx.clearRect(0, 0, w, h);
+
+      const pos = getNodePositions();
+      const nodeR = 24;
+
+      // Draw connections
+      for (let l = 1; l < layers.length; l++) {
+        for (let j = 0; j < layers[l]; j++) {
+          for (let i = 0; i < layers[l - 1]; i++) {
+            const from = pos[l - 1][i];
+            const to = pos[l][j];
+
+            const wt = weights[l] ? weights[l][j][i] : 0;
+            const thickness = Math.min(5, Math.abs(wt) * 2 + 0.5);
+
+            let color = COLORS.border;
+            if (activeDir === 'forward' && activeLayer === l) {
+              color = COLORS.primary;
+            } else if (activeDir === 'backward' && activeLayer === l) {
+              color = COLORS.error;
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(from.x + nodeR, from.y);
+            ctx.lineTo(to.x - nodeR, to.y);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = thickness;
+            ctx.globalAlpha = 0.6;
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+
+            // Weight label
+            const mx = (from.x + to.x) / 2;
+            const my = (from.y + to.y) / 2;
+
+            if (activeDir === 'backward' && activeLayer === l && gradients[l]) {
+              const grad = gradients[l][j] ? gradients[l][j][i] : 0;
+              ctx.fillStyle = COLORS.error;
+              ctx.font = '8px JetBrains Mono, monospace';
+              ctx.textAlign = 'center';
+              ctx.fillText('g=' + grad.toFixed(3), mx, my - 8);
+            }
+
+            ctx.fillStyle = COLORS.textMuted;
+            ctx.font = '8px JetBrains Mono, monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(wt.toFixed(2), mx, my + 10);
+          }
+        }
+      }
+
+      // Draw nodes
+      const layerLabels = ['Input', 'Hidden', 'Output'];
+      for (let l = 0; l < layers.length; l++) {
+        // Layer label
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(layerLabels[Math.min(l, 2)], pos[l][0].x, 30);
+
+        for (let j = 0; j < layers[l]; j++) {
+          const { x, y } = pos[l][j];
+          const act = activations[l][j];
+
+          let fillColor = COLORS.surface;
+          let strokeColor = COLORS.border;
+          let glow = false;
+
+          if (activeDir === 'forward' && activeLayer === l) {
+            fillColor = COLORS.primary;
+            strokeColor = COLORS.primary;
+            glow = true;
+          } else if (activeDir === 'backward' && activeLayer === l) {
+            fillColor = COLORS.error;
+            strokeColor = COLORS.error;
+            glow = true;
+          } else if (act > 0) {
+            // Brightness based on activation
+            const alpha = Math.min(1, act);
+            fillColor = `rgba(203, 178, 237, ${alpha * 0.5})`;
+            strokeColor = COLORS.primary;
+          }
+
+          if (glow) {
+            ctx.shadowColor = fillColor;
+            ctx.shadowBlur = 20;
+          }
+
+          ctx.beginPath();
+          ctx.arc(x, y, nodeR, 0, Math.PI * 2);
+          ctx.fillStyle = fillColor;
+          ctx.fill();
+          ctx.strokeStyle = strokeColor;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.shadowColor = 'transparent';
+          ctx.shadowBlur = 0;
+
+          // Activation value
+          ctx.fillStyle = COLORS.text;
+          ctx.font = '10px JetBrains Mono, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(act.toFixed(2), x, y);
+        }
+      }
+      ctx.textBaseline = 'alphabetic';
+
+      // Target and loss info
+      const lastPos = pos[layers.length - 1][0];
+      ctx.fillStyle = COLORS.textMuted;
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('target: ' + target, lastPos.x + nodeR + 10, lastPos.y - 10);
+      ctx.fillText('loss: ' + loss.toFixed(4), lastPos.x + nodeR + 10, lastPos.y + 10);
+
+      // Status bar
+      ctx.fillStyle = COLORS.textMuted;
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('iteration=' + iteration + '  |  loss=' + loss.toFixed(4) + '  |  ' + phase, 20, h - 15);
+    }
+
+    function executeStep(step) {
+      return new Promise(resolve => {
+        if (step.type === 'forwardLayer') {
+          activeDir = 'forward';
+          activeLayer = step.layer;
+          phase = 'forward';
+
+          // Actually compute forward for this layer
+          for (let j = 0; j < layers[step.layer]; j++) {
+            let sum = biases[step.layer][j];
+            for (let i = 0; i < layers[step.layer - 1]; i++) {
+              sum += weights[step.layer][j][i] * activations[step.layer - 1][i];
+            }
+            activations[step.layer][j] = sigmoid(sum);
+          }
+
+          draw();
+          setTimeout(resolve, getDelay() * 2);
+        } else if (step.type === 'computeLoss') {
+          activeDir = 'none';
+          activeLayer = -1;
+          const output = activations[layers.length - 1][0];
+          loss = 0.5 * (target - output) * (target - output);
+          phase = 'loss computed';
+          draw();
+          setTimeout(resolve, getDelay());
+        } else if (step.type === 'backwardLayer') {
+          activeDir = 'backward';
+          activeLayer = step.layer;
+          phase = 'backward';
+
+          // Compute gradients for this layer
+          const L = layers.length - 1;
+          const output = activations[L][0];
+          const dOutput = (output - target) * output * (1 - output);
+
+          if (step.layer === L) {
+            for (let i = 0; i < layers[L - 1]; i++) {
+              gradients[L][0][i] = dOutput * activations[L - 1][i];
+            }
+          } else {
+            for (let j = 0; j < layers[step.layer]; j++) {
+              const a = activations[step.layer][j];
+              let upstream = 0;
+              for (let k = 0; k < layers[step.layer + 1]; k++) {
+                const gUp = step.layer + 1 === L ? dOutput : 0;
+                upstream += gUp * weights[step.layer + 1][k][j];
+              }
+              const dHidden = upstream * a * (1 - a);
+              for (let i = 0; i < layers[step.layer - 1]; i++) {
+                gradients[step.layer][j][i] = dHidden * activations[step.layer - 1][i];
+              }
+            }
+          }
+
+          draw();
+          setTimeout(resolve, getDelay() * 2);
+        } else if (step.type === 'updateWeights') {
+          activeDir = 'none';
+          activeLayer = -1;
+          phase = 'weights updated';
+
+          const lr = 0.5;
+          for (let l = 1; l < layers.length; l++) {
+            for (let j = 0; j < layers[l]; j++) {
+              for (let i = 0; i < layers[l - 1]; i++) {
+                weights[l][j][i] -= lr * gradients[l][j][i];
+              }
+            }
+          }
+          iteration++;
+          // New random input
+          activations[0][0] = Math.random();
+          activations[0][1] = Math.random();
+          target = Math.random() > 0.5 ? 1 : 0;
+
+          draw();
+          setTimeout(resolve, getDelay());
+        } else {
+          resolve();
+        }
+      });
+    }
+
+    function reset() {
+      running = false;
+      phase = 'idle';
+      activeDir = 'none';
+      activeLayer = -1;
+      iteration = 0;
+      loss = 0;
+      stepQueue = [];
+      initNetwork();
+      updateBtn();
+      draw();
+    }
+
+    async function runSteps(mode) {
+      if (running) {
+        running = false;
+        updateBtn();
+        return;
+      }
+
+      stepQueue = generateSteps(mode);
+      running = true;
+      updateBtn();
+
+      while (stepQueue.length > 0 && running) {
+        const step = stepQueue.shift();
+        await executeStep(step);
+      }
+
+      running = false;
+      activeDir = 'none';
+      activeLayer = -1;
+      updateBtn();
+      draw();
+    }
+
+    function updateBtn() {
+      document.getElementById('btnFull').textContent = running ? '❚❚ Pause' : '▶ Full Step';
+    }
+
+    document.getElementById('btnForward').addEventListener('click', () => runSteps('forward'));
+    document.getElementById('btnBackward').addEventListener('click', () => runSteps('backward'));
+    document.getElementById('btnFull').addEventListener('click', () => runSteps('full'));
+    document.getElementById('btnReset').addEventListener('click', reset);
+    document.getElementById('speedSlider').addEventListener('input', e => {
+      speed = parseInt(e.target.value);
+    });
+    window.addEventListener('resize', () => { resize(); draw(); });
+
+    resize();
+    reset();
+  })();
+  </script>
+</body>
+</html>

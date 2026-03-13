@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gradient Descent Optimization — CS Animations</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../../index.html" class="nav__logo">
+      <span>&gt;</span> cs_animations
+    </a>
+    <ul class="nav__links">
+      <li><a href="../../index.html#categories">Browse</a></li>
+    </ul>
+  </nav>
+
+  <div class="animation-page">
+    <div class="animation-page__header">
+      <div class="animation-page__breadcrumb">
+        <a href="../../index.html">home</a>
+        <span class="sep">/</span>
+        <a href="index.html">neural-networks</a>
+        <span class="sep">/</span>
+        <span>gradient-descent</span>
+      </div>
+      <h1 class="animation-page__title">Gradient Descent Optimization</h1>
+      <p class="animation-page__subtitle">
+        Watch a point roll downhill on a loss surface, following the negative gradient to find the minimum.
+      </p>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="controls__btn controls__btn--primary" id="btnStart">&#9654; Start</button>
+      <button class="controls__btn" id="btnStep">Step</button>
+      <button class="controls__btn" id="btnReset">Reset</button>
+      <div class="controls__separator"></div>
+      <span class="controls__label">Speed</span>
+      <input type="range" class="controls__slider" id="speedSlider" min="1" max="100" value="50">
+      <div class="controls__separator"></div>
+      <span class="controls__label">Learning Rate</span>
+      <input type="range" class="controls__slider" id="lrSlider" min="1" max="100" value="30">
+    </div>
+
+    <div class="info-panel">
+      <div class="info-block">
+        <h4 class="info-block__title">Complexity</h4>
+        <div class="info-block__content">
+          <p>Time: <code>O(iterations * parameters)</code></p>
+          <p>Each step computes gradient and updates parameters</p>
+          <p style="margin-top:0.75rem; color: var(--text-muted);">Foundation of neural network training. Learning rate controls step size — too high causes oscillation, too low causes slow convergence.</p>
+        </div>
+      </div>
+      <div class="info-block">
+        <h4 class="info-block__title">How It Works</h4>
+        <div class="info-block__content">
+          <div class="step"><span class="step-num">01</span> Start at a random point on the loss surface</div>
+          <div class="step"><span class="step-num">02</span> Compute the gradient (direction of steepest ascent)</div>
+          <div class="step"><span class="step-num">03</span> Move in the opposite direction (negative gradient)</div>
+          <div class="step"><span class="step-num">04</span> Scale the step by the learning rate</div>
+          <div class="step"><span class="step-num">05</span> Repeat until loss converges to a minimum</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    cs_animations — built for learning
+  </footer>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const COLORS = {
+      primary:   '#cbb2ed',
+      accent:    '#f7cc93',
+      success:   '#b3e4a5',
+      error:     '#ef8aa6',
+      text:      '#e8e4f0',
+      textMuted: '#7a7494',
+      bg:        '#191623',
+      surface:   '#221e30',
+      border:    '#362f4a',
+    };
+
+    let speed = 50;
+    let lr = 0.06;
+    let running = false;
+    let posX = 0, posY = 0;
+    let path = [];
+    let iteration = 0;
+    let currentLoss = 0;
+
+    // Loss surface parameters (tilted bowl with slight elongation)
+    let a = 1, b = 3; // Elongation factors
+    let centerX = 0, centerY = 0;
+    let angle = 0; // Rotation angle
+
+    function resize() {
+      const container = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = container.clientWidth * dpr;
+      canvas.height = 500 * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = container.clientWidth + 'px';
+      canvas.style.height = '500px';
+    }
+
+    function getDelay() {
+      return Math.max(10, 500 - (speed / 100) * 490);
+    }
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    // Rosenbrock-inspired loss with rotation
+    function loss(x, y) {
+      const cosA = Math.cos(angle), sinA = Math.sin(angle);
+      const rx = cosA * (x - centerX) + sinA * (y - centerY);
+      const ry = -sinA * (x - centerX) + cosA * (y - centerY);
+      return a * rx * rx + b * ry * ry;
+    }
+
+    function gradient(x, y) {
+      const cosA = Math.cos(angle), sinA = Math.sin(angle);
+      const rx = cosA * (x - centerX) + sinA * (y - centerY);
+      const ry = -sinA * (x - centerX) + cosA * (y - centerY);
+      const dRx = 2 * a * rx;
+      const dRy = 2 * b * ry;
+      // Chain rule back to x,y
+      const dx = dRx * cosA - dRy * sinA;
+      const dy = dRx * sinA + dRy * cosA;
+      return { dx, dy };
+    }
+
+    function toCanvas(x, y) {
+      const w = canvas.clientWidth;
+      const h = 500;
+      const plotSize = Math.min(w - 200, h - 100);
+      const plotX = 40;
+      const plotY = 40;
+      // Map from [-3, 3] to plot area
+      const cx = plotX + (x + 3) / 6 * plotSize;
+      const cy = plotY + (y + 3) / 6 * plotSize;
+      return { cx, cy };
+    }
+
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = 500;
+      ctx.clearRect(0, 0, w, h);
+
+      const plotSize = Math.min(w - 200, h - 100);
+      const plotX = 40;
+      const plotY = 40;
+
+      // Draw contour plot
+      const contourLevels = [0.1, 0.5, 1, 2, 4, 7, 11, 16, 22, 30];
+      const contourColors = [
+        '#1a2a1a', '#1f3020', '#243626', '#2a3d2c',
+        '#304433', '#364b3a', '#3d5341', '#445b49',
+        '#4b6350', '#526b58',
+      ];
+
+      // Draw filled contours using sampling
+      const resolution = 3;
+      for (let px = plotX; px < plotX + plotSize; px += resolution) {
+        for (let py = plotY; py < plotY + plotSize; py += resolution) {
+          const x = (px - plotX) / plotSize * 6 - 3;
+          const y = (py - plotY) / plotSize * 6 - 3;
+          const l = loss(x, y);
+
+          let colorIdx = contourLevels.length - 1;
+          for (let i = 0; i < contourLevels.length; i++) {
+            if (l < contourLevels[i]) {
+              colorIdx = i;
+              break;
+            }
+          }
+
+          ctx.fillStyle = contourColors[Math.min(colorIdx, contourColors.length - 1)];
+          ctx.fillRect(px, py, resolution, resolution);
+        }
+      }
+
+      // Draw contour lines
+      ctx.lineWidth = 0.5;
+      for (let level = 0; level < contourLevels.length; level++) {
+        const threshold = contourLevels[level];
+        ctx.strokeStyle = 'rgba(179, 228, 165, 0.3)';
+
+        // March along grid and find contour crossings (simplified)
+        const step = 4;
+        for (let px = plotX; px < plotX + plotSize - step; px += step) {
+          for (let py = plotY; py < plotY + plotSize - step; py += step) {
+            const x1 = (px - plotX) / plotSize * 6 - 3;
+            const y1 = (py - plotY) / plotSize * 6 - 3;
+            const x2 = ((px + step) - plotX) / plotSize * 6 - 3;
+            const y2 = ((py + step) - plotY) / plotSize * 6 - 3;
+
+            const l00 = loss(x1, y1);
+            const l10 = loss(x2, y1);
+            const l01 = loss(x1, y2);
+
+            // Horizontal edge
+            if ((l00 < threshold) !== (l10 < threshold)) {
+              const t = (threshold - l00) / (l10 - l00);
+              const cx = px + t * step;
+              ctx.beginPath();
+              ctx.arc(cx, py, 0.5, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+            // Vertical edge
+            if ((l00 < threshold) !== (l01 < threshold)) {
+              const t = (threshold - l00) / (l01 - l00);
+              const cy = py + t * step;
+              ctx.beginPath();
+              ctx.arc(px, cy, 0.5, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          }
+        }
+      }
+
+      // Draw path
+      if (path.length > 1) {
+        ctx.strokeStyle = COLORS.accent;
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.8;
+        ctx.beginPath();
+        const start = toCanvas(path[0].x, path[0].y);
+        ctx.moveTo(start.cx, start.cy);
+        for (let i = 1; i < path.length; i++) {
+          const p = toCanvas(path[i].x, path[i].y);
+          ctx.lineTo(p.cx, p.cy);
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        // Draw path dots
+        for (let i = 0; i < path.length; i++) {
+          const p = toCanvas(path[i].x, path[i].y);
+          const alpha = 0.3 + 0.7 * (i / path.length);
+          ctx.beginPath();
+          ctx.arc(p.cx, p.cy, 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = COLORS.accent;
+          ctx.globalAlpha = alpha;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+      }
+
+      // Draw current position
+      const cur = toCanvas(posX, posY);
+      ctx.shadowColor = COLORS.primary;
+      ctx.shadowBlur = 20;
+      ctx.beginPath();
+      ctx.arc(cur.cx, cur.cy, 7, 0, Math.PI * 2);
+      ctx.fillStyle = COLORS.primary;
+      ctx.fill();
+      ctx.strokeStyle = COLORS.text;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+
+      // Draw gradient arrow
+      const grad = gradient(posX, posY);
+      const gradMag = Math.sqrt(grad.dx * grad.dx + grad.dy * grad.dy);
+      if (gradMag > 0.01) {
+        const arrowLen = Math.min(40, gradMag * 8);
+        const arrowDx = -grad.dx / gradMag * arrowLen;
+        const arrowDy = -grad.dy / gradMag * arrowLen;
+
+        // Scale to canvas coordinates
+        const scale = plotSize / 6;
+        const adx = arrowDx / 6 * plotSize * 0.3;
+        const ady = arrowDy / 6 * plotSize * 0.3;
+
+        ctx.beginPath();
+        ctx.moveTo(cur.cx, cur.cy);
+        ctx.lineTo(cur.cx + adx, cur.cy + ady);
+        ctx.strokeStyle = COLORS.error;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Arrowhead
+        const headLen = 8;
+        const aAngle = Math.atan2(ady, adx);
+        ctx.beginPath();
+        ctx.moveTo(cur.cx + adx, cur.cy + ady);
+        ctx.lineTo(
+          cur.cx + adx - headLen * Math.cos(aAngle - 0.4),
+          cur.cy + ady - headLen * Math.sin(aAngle - 0.4)
+        );
+        ctx.moveTo(cur.cx + adx, cur.cy + ady);
+        ctx.lineTo(
+          cur.cx + adx - headLen * Math.cos(aAngle + 0.4),
+          cur.cy + ady - headLen * Math.sin(aAngle + 0.4)
+        );
+        ctx.stroke();
+      }
+
+      // Draw minimum marker
+      const minPos = toCanvas(centerX, centerY);
+      ctx.beginPath();
+      ctx.arc(minPos.cx, minPos.cy, 4, 0, Math.PI * 2);
+      ctx.strokeStyle = COLORS.success;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = COLORS.textMuted;
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('min', minPos.cx + 8, minPos.cy + 4);
+
+      // Info panel on the right
+      const infoX = plotX + plotSize + 30;
+      const infoY = plotY + 20;
+
+      if (w - infoX > 100) {
+        ctx.fillStyle = COLORS.text;
+        ctx.font = '12px JetBrains Mono, monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText('Gradient Descent', infoX, infoY);
+
+        ctx.font = '11px JetBrains Mono, monospace';
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.fillText('iteration: ' + iteration, infoX, infoY + 30);
+
+        ctx.fillStyle = COLORS.accent;
+        ctx.fillText('loss: ' + currentLoss.toFixed(4), infoX, infoY + 55);
+
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.fillText('lr: ' + lr.toFixed(4), infoX, infoY + 80);
+
+        ctx.fillText('x: ' + posX.toFixed(3), infoX, infoY + 110);
+        ctx.fillText('y: ' + posY.toFixed(3), infoX, infoY + 130);
+
+        const grad2 = gradient(posX, posY);
+        const gMag = Math.sqrt(grad2.dx * grad2.dx + grad2.dy * grad2.dy);
+        ctx.fillStyle = COLORS.error;
+        ctx.fillText('|grad|: ' + gMag.toFixed(4), infoX, infoY + 160);
+
+        // Learning rate effect hint
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.font = '9px JetBrains Mono, monospace';
+        if (lr > 0.15) {
+          ctx.fillStyle = COLORS.error;
+          ctx.fillText('High LR: may oscillate', infoX, infoY + 200);
+        } else if (lr < 0.02) {
+          ctx.fillStyle = COLORS.accent;
+          ctx.fillText('Low LR: slow convergence', infoX, infoY + 200);
+        } else {
+          ctx.fillStyle = COLORS.success;
+          ctx.fillText('Good LR range', infoX, infoY + 200);
+        }
+      }
+
+      // Status
+      ctx.fillStyle = COLORS.textMuted;
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      let status = 'ready';
+      if (running) status = 'optimizing...';
+      if (currentLoss < 0.001 && !running) status = 'converged';
+      ctx.fillText('gradient descent  |  ' + status, 20, h - 15);
+    }
+
+    function step() {
+      const grad = gradient(posX, posY);
+      posX -= lr * grad.dx;
+      posY -= lr * grad.dy;
+
+      // Clamp to bounds
+      posX = Math.max(-3, Math.min(3, posX));
+      posY = Math.max(-3, Math.min(3, posY));
+
+      currentLoss = loss(posX, posY);
+      path.push({ x: posX, y: posY });
+      iteration++;
+      draw();
+    }
+
+    function reset() {
+      running = false;
+      iteration = 0;
+      path = [];
+
+      // Randomize surface
+      a = 0.5 + Math.random() * 2;
+      b = 1 + Math.random() * 4;
+      angle = Math.random() * Math.PI;
+      centerX = (Math.random() - 0.5) * 2;
+      centerY = (Math.random() - 0.5) * 2;
+
+      // Random starting position
+      posX = (Math.random() - 0.5) * 4;
+      posY = (Math.random() - 0.5) * 4;
+      currentLoss = loss(posX, posY);
+      path.push({ x: posX, y: posY });
+
+      updateBtn();
+      draw();
+    }
+
+    async function start() {
+      if (running) {
+        running = false;
+        updateBtn();
+        return;
+      }
+
+      running = true;
+      updateBtn();
+
+      while (running && iteration < 500 && currentLoss > 0.0001) {
+        step();
+        await new Promise(r => setTimeout(r, getDelay()));
+      }
+
+      running = false;
+      updateBtn();
+      draw();
+    }
+
+    function updateBtn() {
+      document.getElementById('btnStart').textContent = running ? '❚❚ Pause' : '▶ Start';
+    }
+
+    document.getElementById('btnStart').addEventListener('click', start);
+    document.getElementById('btnStep').addEventListener('click', () => {
+      if (!running) step();
+    });
+    document.getElementById('btnReset').addEventListener('click', reset);
+    document.getElementById('speedSlider').addEventListener('input', e => {
+      speed = parseInt(e.target.value);
+    });
+    document.getElementById('lrSlider').addEventListener('input', e => {
+      lr = parseInt(e.target.value) / 500; // 0.002 to 0.2
+    });
+    window.addEventListener('resize', () => { resize(); draw(); });
+
+    resize();
+    reset();
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Single Perceptron — CS Animations</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../../index.html" class="nav__logo">
+      <span>&gt;</span> cs_animations
+    </a>
+    <ul class="nav__links">
+      <li><a href="../../index.html#categories">Browse</a></li>
+    </ul>
+  </nav>
+
+  <div class="animation-page">
+    <div class="animation-page__header">
+      <div class="animation-page__breadcrumb">
+        <a href="../../index.html">home</a>
+        <span class="sep">/</span>
+        <a href="index.html">neural-networks</a>
+        <span class="sep">/</span>
+        <span>perceptron</span>
+      </div>
+      <h1 class="animation-page__title">Single Perceptron</h1>
+      <p class="animation-page__subtitle">
+        Watch a single neuron learn to classify linearly separable data by adjusting its weights and bias.
+      </p>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="controls__btn" id="btnStep">Train Step</button>
+      <button class="controls__btn controls__btn--primary" id="btnAuto">&#9654; Auto Train</button>
+      <button class="controls__btn" id="btnReset">Reset</button>
+      <div class="controls__separator"></div>
+      <span class="controls__label">Speed</span>
+      <input type="range" class="controls__slider" id="speedSlider" min="1" max="100" value="50">
+      <div class="controls__separator"></div>
+      <span class="controls__label">LR</span>
+      <input type="range" class="controls__slider" id="lrSlider" min="1" max="100" value="50">
+    </div>
+
+    <div class="info-panel">
+      <div class="info-block">
+        <h4 class="info-block__title">Complexity</h4>
+        <div class="info-block__content">
+          <p>Converges in finite steps for linearly separable data</p>
+          <p>Update rule: <code>w += lr * (target - output) * x</code></p>
+          <p style="margin-top:0.75rem; color: var(--text-muted);">The simplest neural network — a single neuron with step activation.</p>
+        </div>
+      </div>
+      <div class="info-block">
+        <h4 class="info-block__title">How It Works</h4>
+        <div class="info-block__content">
+          <div class="step"><span class="step-num">01</span> Compute weighted sum: z = w1*x1 + w2*x2 + bias</div>
+          <div class="step"><span class="step-num">02</span> Apply step activation: output = z >= 0 ? 1 : 0</div>
+          <div class="step"><span class="step-num">03</span> Compute error: error = target - output</div>
+          <div class="step"><span class="step-num">04</span> Update weights: w += learning_rate * error * x</div>
+          <div class="step"><span class="step-num">05</span> Repeat until all points classified correctly</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    cs_animations — built for learning
+  </footer>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const COLORS = {
+      primary:   '#cbb2ed',
+      accent:    '#f7cc93',
+      success:   '#b3e4a5',
+      error:     '#ef8aa6',
+      text:      '#e8e4f0',
+      textMuted: '#7a7494',
+      bg:        '#191623',
+      surface:   '#221e30',
+      border:    '#362f4a',
+    };
+
+    let w1 = 0, w2 = 0, bias = 0;
+    let speed = 50;
+    let lr = 0.1;
+    let running = false;
+    let data = [];
+    let epoch = 0;
+    let errors = 0;
+    let currentPoint = -1;
+    let trainIndex = 0;
+
+    function resize() {
+      const container = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = container.clientWidth * dpr;
+      canvas.height = 500 * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = container.clientWidth + 'px';
+      canvas.style.height = '500px';
+    }
+
+    function getDelay() {
+      return Math.max(10, 500 - (speed / 100) * 490);
+    }
+
+    function generateData() {
+      data = [];
+      // Generate linearly separable data
+      // Class 0: lower-left region, Class 1: upper-right region
+      const angle = Math.random() * Math.PI * 0.5 + Math.PI * 0.25;
+      const nx = Math.cos(angle);
+      const ny = Math.sin(angle);
+
+      for (let i = 0; i < 20; i++) {
+        const x = Math.random() * 2 - 1;
+        const y = Math.random() * 2 - 1;
+        const side = nx * x + ny * y;
+        const label = side > 0.15 ? 1 : (side < -0.15 ? 0 : (Math.random() > 0.5 ? 1 : 0));
+
+        // Ensure separation
+        if (Math.abs(side) < 0.1) {
+          i--;
+          continue;
+        }
+        data.push({ x, y, label: side > 0 ? 1 : 0 });
+      }
+    }
+
+    function predict(x, y) {
+      const z = w1 * x + w2 * y + bias;
+      return z >= 0 ? 1 : 0;
+    }
+
+    function trainStep() {
+      const point = data[trainIndex];
+      currentPoint = trainIndex;
+      const output = predict(point.x, point.y);
+      const error = point.label - output;
+
+      if (error !== 0) {
+        w1 += lr * error * point.x;
+        w2 += lr * error * point.y;
+        bias += lr * error;
+        errors++;
+      }
+
+      trainIndex++;
+      if (trainIndex >= data.length) {
+        trainIndex = 0;
+        epoch++;
+        errors = 0;
+      }
+
+      draw();
+    }
+
+    function draw() {
+      const canvasW = canvas.clientWidth;
+      const canvasH = 500;
+      ctx.clearRect(0, 0, canvasW, canvasH);
+
+      // Layout: scatter plot on left, perceptron diagram on right
+      const plotSize = Math.min(canvasW * 0.55, canvasH - 80);
+      const plotX = 40;
+      const plotY = 40;
+      const plotW = plotSize;
+      const plotH = plotSize;
+
+      // Draw scatter plot background
+      ctx.fillStyle = COLORS.surface;
+      ctx.fillRect(plotX, plotY, plotW, plotH);
+      ctx.strokeStyle = COLORS.border;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+      // Grid lines
+      ctx.strokeStyle = COLORS.border;
+      ctx.lineWidth = 0.5;
+      for (let i = 1; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(plotX + plotW * i / 4, plotY);
+        ctx.lineTo(plotX + plotW * i / 4, plotY + plotH);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(plotX, plotY + plotH * i / 4);
+        ctx.lineTo(plotX + plotW, plotY + plotH * i / 4);
+        ctx.stroke();
+      }
+
+      // Decision boundary
+      if (w1 !== 0 || w2 !== 0) {
+        ctx.strokeStyle = COLORS.primary;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = COLORS.primary;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+
+        // Line: w1*x + w2*y + bias = 0  => y = -(w1*x + bias) / w2
+        if (Math.abs(w2) > 0.001) {
+          const x0 = -1, x1 = 1;
+          const y0 = -(w1 * x0 + bias) / w2;
+          const y1_val = -(w1 * x1 + bias) / w2;
+          const sx0 = plotX + (x0 + 1) / 2 * plotW;
+          const sy0 = plotY + plotH - (y0 + 1) / 2 * plotH;
+          const sx1 = plotX + (x1 + 1) / 2 * plotW;
+          const sy1 = plotY + plotH - (y1_val + 1) / 2 * plotH;
+          ctx.moveTo(sx0, sy0);
+          ctx.lineTo(sx1, sy1);
+        } else {
+          // Vertical line: x = -bias / w1
+          const xv = -bias / (w1 || 0.001);
+          const sx = plotX + (xv + 1) / 2 * plotW;
+          ctx.moveTo(sx, plotY);
+          ctx.lineTo(sx, plotY + plotH);
+        }
+        ctx.stroke();
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+      }
+
+      // Draw data points
+      data.forEach((point, i) => {
+        const sx = plotX + (point.x + 1) / 2 * plotW;
+        const sy = plotY + plotH - (point.y + 1) / 2 * plotH;
+        const r = i === currentPoint ? 8 : 5;
+
+        ctx.beginPath();
+        ctx.arc(sx, sy, r, 0, Math.PI * 2);
+
+        if (point.label === 1) {
+          ctx.fillStyle = COLORS.accent;
+        } else {
+          ctx.fillStyle = COLORS.primary;
+        }
+
+        if (i === currentPoint) {
+          ctx.shadowColor = ctx.fillStyle;
+          ctx.shadowBlur = 15;
+        }
+        ctx.fill();
+
+        // Show misclassification
+        const pred = predict(point.x, point.y);
+        if (pred !== point.label) {
+          ctx.strokeStyle = COLORS.error;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+      });
+
+      // Perceptron diagram on the right
+      const diagX = plotX + plotW + 40;
+      const diagW = canvasW - diagX - 30;
+      const diagCenterY = canvasH / 2;
+
+      if (diagW > 100) {
+        const nodeR = 22;
+        const inputX = diagX + 30;
+        const sumX = diagX + diagW * 0.45;
+        const actX = diagX + diagW * 0.7;
+        const outX = diagX + diagW - 30;
+        const inputY1 = diagCenterY - 50;
+        const inputY2 = diagCenterY + 50;
+        const biasY = diagCenterY - 110;
+
+        // Connections with weight labels
+        function drawConnection(x1, y1, x2, y2, label, color) {
+          ctx.beginPath();
+          ctx.moveTo(x1 + nodeR, y1);
+          ctx.lineTo(x2 - nodeR, y2);
+          const thickness = Math.min(4, Math.abs(parseFloat(label)) * 3 + 0.5);
+          ctx.strokeStyle = color || COLORS.border;
+          ctx.lineWidth = thickness;
+          ctx.stroke();
+
+          // Label
+          const mx = (x1 + x2) / 2;
+          const my = (y1 + y2) / 2 - 10;
+          ctx.fillStyle = COLORS.text;
+          ctx.font = '9px JetBrains Mono, monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(label, mx, my);
+        }
+
+        drawConnection(inputX, inputY1, sumX, diagCenterY, w1.toFixed(2), COLORS.accent);
+        drawConnection(inputX, inputY2, sumX, diagCenterY, w2.toFixed(2), COLORS.accent);
+
+        // Bias connection
+        ctx.beginPath();
+        ctx.moveTo(sumX, biasY + nodeR);
+        ctx.lineTo(sumX, diagCenterY - nodeR);
+        ctx.strokeStyle = COLORS.textMuted;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.font = '9px JetBrains Mono, monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText('b=' + bias.toFixed(2), sumX + 8, biasY + nodeR + 12);
+
+        // Sum to activation
+        ctx.beginPath();
+        ctx.moveTo(sumX + nodeR, diagCenterY);
+        ctx.lineTo(actX - nodeR, diagCenterY);
+        ctx.strokeStyle = COLORS.border;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Activation to output
+        ctx.beginPath();
+        ctx.moveTo(actX + nodeR, diagCenterY);
+        ctx.lineTo(outX - nodeR, diagCenterY);
+        ctx.strokeStyle = COLORS.border;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Draw nodes
+        function drawNode(x, y, label, color) {
+          ctx.beginPath();
+          ctx.arc(x, y, nodeR, 0, Math.PI * 2);
+          ctx.fillStyle = COLORS.surface;
+          ctx.fill();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.fillStyle = color;
+          ctx.font = '9px JetBrains Mono, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, x, y);
+        }
+
+        drawNode(inputX, inputY1, 'x1', COLORS.primary);
+        drawNode(inputX, inputY2, 'x2', COLORS.primary);
+        drawNode(sumX, biasY, 'bias', COLORS.textMuted);
+        drawNode(sumX, diagCenterY, 'sum', COLORS.accent);
+        drawNode(actX, diagCenterY, 'step', COLORS.text);
+        drawNode(outX, diagCenterY, 'out', COLORS.success);
+
+        ctx.textBaseline = 'alphabetic';
+
+        // Title
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('Perceptron', diagX + diagW / 2, plotY);
+      }
+
+      // Status
+      ctx.fillStyle = COLORS.textMuted;
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('epoch=' + epoch + '  |  lr=' + lr.toFixed(2), 20, 20);
+    }
+
+    function reset() {
+      running = false;
+      w1 = (Math.random() - 0.5) * 0.5;
+      w2 = (Math.random() - 0.5) * 0.5;
+      bias = (Math.random() - 0.5) * 0.5;
+      epoch = 0;
+      errors = 0;
+      currentPoint = -1;
+      trainIndex = 0;
+      generateData();
+      updateBtn();
+      draw();
+    }
+
+    async function autoTrain() {
+      if (running) {
+        running = false;
+        updateBtn();
+        return;
+      }
+
+      running = true;
+      updateBtn();
+
+      while (running && epoch < 100) {
+        trainStep();
+        await new Promise(r => setTimeout(r, getDelay()));
+
+        // Check convergence
+        let allCorrect = true;
+        for (const p of data) {
+          if (predict(p.x, p.y) !== p.label) {
+            allCorrect = false;
+            break;
+          }
+        }
+        if (allCorrect && trainIndex === 0) {
+          running = false;
+        }
+      }
+
+      running = false;
+      updateBtn();
+      draw();
+    }
+
+    function updateBtn() {
+      document.getElementById('btnAuto').textContent = running ? '❚❚ Pause' : '▶ Auto Train';
+    }
+
+    document.getElementById('btnStep').addEventListener('click', () => {
+      if (!running) { trainStep(); }
+    });
+    document.getElementById('btnAuto').addEventListener('click', autoTrain);
+    document.getElementById('btnReset').addEventListener('click', reset);
+    document.getElementById('speedSlider').addEventListener('input', e => {
+      speed = parseInt(e.target.value);
+    });
+    document.getElementById('lrSlider').addEventListener('input', e => {
+      lr = parseInt(e.target.value) / 500; // 0.002 to 0.2
+    });
+    window.addEventListener('resize', () => { resize(); draw(); });
+
+    resize();
+    reset();
+  })();
+  </script>
+</body>
+</html>

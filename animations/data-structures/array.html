@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Array — CS Animations</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../../index.html" class="nav__logo">
+      <span>&gt;</span> cs_animations
+    </a>
+    <ul class="nav__links">
+      <li><a href="../../index.html#categories">Browse</a></li>
+    </ul>
+  </nav>
+
+  <div class="animation-page">
+    <div class="animation-page__header">
+      <div class="animation-page__breadcrumb">
+        <a href="../../index.html">home</a>
+        <span class="sep">/</span>
+        <a href="index.html">data-structures</a>
+        <span class="sep">/</span>
+        <span>array</span>
+      </div>
+      <h1 class="animation-page__title">Array</h1>
+      <p class="animation-page__subtitle">
+        A contiguous block of memory storing elements at indexed positions — the most fundamental data structure.
+      </p>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="controls__btn controls__btn--primary" id="btnInsert">+ Insert</button>
+      <button class="controls__btn" id="btnDelete">− Delete</button>
+      <button class="controls__btn" id="btnAccess">Access</button>
+      <button class="controls__btn" id="btnReset">Reset</button>
+      <div class="controls__separator"></div>
+      <span class="controls__label">Speed</span>
+      <input type="range" class="controls__slider" id="speedSlider" min="1" max="100" value="50">
+    </div>
+
+    <div class="info-panel">
+      <div class="info-block">
+        <h4 class="info-block__title">Complexity</h4>
+        <div class="info-block__content">
+          <p>Access: <code>O(1)</code> — direct index lookup</p>
+          <p>Search: <code>O(n)</code> — linear scan</p>
+          <p>Insert/Delete: <code>O(n)</code> — shifting elements</p>
+          <p style="margin-top:0.75rem; color: var(--text-muted);">Contiguous memory layout provides excellent cache performance.</p>
+        </div>
+      </div>
+      <div class="info-block">
+        <h4 class="info-block__title">How It Works</h4>
+        <div class="info-block__content">
+          <div class="step"><span class="step-num">01</span> Elements stored in contiguous memory locations</div>
+          <div class="step"><span class="step-num">02</span> Each element accessed by its numeric index</div>
+          <div class="step"><span class="step-num">03</span> Insertion at end is O(1) if space available</div>
+          <div class="step"><span class="step-num">04</span> Insertion/deletion in middle requires shifting</div>
+          <div class="step"><span class="step-num">05</span> Fixed or dynamically resizable capacity</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    cs_animations — built for learning
+  </footer>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const COLORS = {
+      primary:   '#cbb2ed',
+      secondary: '#f0c6c3',
+      accent:    '#f7cc93',
+      highlight: '#a8d8df',
+      success:   '#b3e4a5',
+      text:      '#e8e4f0',
+      textMuted: '#7a7494',
+      bg:        '#191623',
+      surface:   '#221e30',
+      border:    '#362f4a',
+    };
+
+    let arr = [];
+    let maxSize = 16;
+    let speed = 50;
+    let animating = false;
+    let highlightIndex = -1;
+    let highlightColor = '';
+    let highlightAlpha = 0;
+    let deletingIndex = -1;
+    let deleteAlpha = 1;
+    let insertAnim = { active: false, progress: 0 };
+    let statusText = 'ready';
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function getDelay() {
+      return Math.max(10, 500 - (speed / 100) * 490);
+    }
+
+    function resize() {
+      const container = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = container.clientWidth * dpr;
+      canvas.height = 500 * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = container.clientWidth + 'px';
+      canvas.style.height = '500px';
+    }
+
+    function generateArray() {
+      arr = [];
+      const count = 8;
+      for (let i = 0; i < count; i++) {
+        arr.push(Math.floor(Math.random() * 99) + 1);
+      }
+      highlightIndex = -1;
+      deletingIndex = -1;
+      insertAnim.active = false;
+      animating = false;
+      statusText = 'ready';
+      draw();
+    }
+
+    function getCellMetrics() {
+      const w = canvas.clientWidth;
+      const padding = 40;
+      const cellSize = Math.min(60, (w - padding * 2) / maxSize - 4);
+      const gap = 4;
+      const totalWidth = arr.length * (cellSize + gap) - gap;
+      const startX = (w - totalWidth) / 2;
+      const startY = 200;
+      return { cellSize, gap, startX, startY, w };
+    }
+
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = 500;
+      ctx.clearRect(0, 0, w, h);
+
+      const { cellSize, gap, startX, startY } = getCellMetrics();
+
+      // Draw cells
+      for (let i = 0; i < arr.length; i++) {
+        const x = startX + i * (cellSize + gap);
+        const y = startY;
+        let alpha = 1;
+
+        if (deletingIndex === i) {
+          alpha = deleteAlpha;
+        }
+
+        ctx.globalAlpha = alpha;
+
+        // Cell background
+        let fillColor = COLORS.surface;
+        let borderColor = COLORS.border;
+        let glowing = false;
+
+        if (highlightIndex === i && highlightAlpha > 0) {
+          fillColor = highlightColor;
+          borderColor = highlightColor;
+          glowing = true;
+        }
+
+        if (insertAnim.active && i === arr.length - 1) {
+          fillColor = COLORS.accent;
+          borderColor = COLORS.accent;
+          glowing = true;
+        }
+
+        if (glowing) {
+          ctx.shadowColor = fillColor;
+          ctx.shadowBlur = 20;
+        }
+
+        // Rounded rect
+        const r = 6;
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + cellSize - r, y);
+        ctx.quadraticCurveTo(x + cellSize, y, x + cellSize, y + r);
+        ctx.lineTo(x + cellSize, y + cellSize - r);
+        ctx.quadraticCurveTo(x + cellSize, y + cellSize, x + cellSize - r, y + cellSize);
+        ctx.lineTo(x + r, y + cellSize);
+        ctx.quadraticCurveTo(x, y + cellSize, x, y + cellSize - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
+        // Value
+        ctx.fillStyle = COLORS.text;
+        ctx.font = 'bold 16px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(arr[i], x + cellSize / 2, y + cellSize / 2);
+
+        // Index below
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.font = '11px JetBrains Mono, monospace';
+        ctx.fillText(i, x + cellSize / 2, y + cellSize + 18);
+
+        ctx.globalAlpha = 1;
+      }
+
+      // Draw empty slots
+      for (let i = arr.length; i < maxSize; i++) {
+        const x = startX + i * (cellSize + gap);
+        const y = startY;
+
+        ctx.beginPath();
+        const r = 6;
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + cellSize - r, y);
+        ctx.quadraticCurveTo(x + cellSize, y, x + cellSize, y + r);
+        ctx.lineTo(x + cellSize, y + cellSize - r);
+        ctx.quadraticCurveTo(x + cellSize, y + cellSize, x + cellSize - r, y + cellSize);
+        ctx.lineTo(x + r, y + cellSize);
+        ctx.quadraticCurveTo(x, y + cellSize, x, y + cellSize - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = COLORS.border;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.font = '11px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(i, x + cellSize / 2, y + cellSize + 18);
+      }
+
+      // Status
+      ctx.fillStyle = COLORS.textMuted;
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`length=${arr.length}  capacity=${maxSize}  |  ${statusText}`, 40, 24);
+    }
+
+    async function animateInsert() {
+      if (animating || arr.length >= maxSize) return;
+      animating = true;
+      const val = Math.floor(Math.random() * 99) + 1;
+      arr.push(val);
+      insertAnim.active = true;
+      statusText = `inserted ${val} at [${arr.length - 1}]`;
+
+      const frames = 20;
+      for (let f = 0; f < frames; f++) {
+        await new Promise(r => requestAnimationFrame(r));
+        draw();
+      }
+      insertAnim.active = false;
+      draw();
+      animating = false;
+    }
+
+    async function animateDelete() {
+      if (animating || arr.length === 0) return;
+      animating = true;
+      deletingIndex = arr.length - 1;
+      statusText = `deleting [${deletingIndex}]`;
+
+      const frames = 20;
+      for (let f = 0; f <= frames; f++) {
+        deleteAlpha = 1 - easeInOutCubic(f / frames);
+        draw();
+        await new Promise(r => requestAnimationFrame(r));
+      }
+
+      const removed = arr.pop();
+      deletingIndex = -1;
+      deleteAlpha = 1;
+      statusText = `deleted ${removed}`;
+      draw();
+      animating = false;
+    }
+
+    async function animateAccess() {
+      if (animating || arr.length === 0) return;
+      animating = true;
+      const idx = Math.floor(Math.random() * arr.length);
+      highlightIndex = idx;
+      highlightColor = COLORS.primary;
+      highlightAlpha = 1;
+      statusText = `accessing [${idx}] → ${arr[idx]}`;
+      draw();
+
+      await new Promise(r => setTimeout(r, getDelay() * 8));
+
+      // Fade out
+      const frames = 20;
+      for (let f = 0; f <= frames; f++) {
+        highlightAlpha = 1 - easeInOutCubic(f / frames);
+        if (highlightAlpha <= 0) highlightIndex = -1;
+        draw();
+        await new Promise(r => requestAnimationFrame(r));
+      }
+
+      highlightIndex = -1;
+      statusText = `accessed [${idx}] = ${arr[idx]}`;
+      draw();
+      animating = false;
+    }
+
+    // Events
+    document.getElementById('btnInsert').addEventListener('click', animateInsert);
+    document.getElementById('btnDelete').addEventListener('click', animateDelete);
+    document.getElementById('btnAccess').addEventListener('click', animateAccess);
+    document.getElementById('btnReset').addEventListener('click', generateArray);
+    document.getElementById('speedSlider').addEventListener('input', (e) => {
+      speed = parseInt(e.target.value);
+    });
+
+    window.addEventListener('resize', () => { resize(); draw(); });
+
+    resize();
+    generateArray();
+  })();
+  </script>
+</body>
+</html>

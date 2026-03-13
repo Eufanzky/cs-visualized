@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fibonacci with Memoization — CS Animations</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../../index.html" class="nav__logo">
+      <span>&gt;</span> cs_animations
+    </a>
+    <ul class="nav__links">
+      <li><a href="../../index.html#categories">Browse</a></li>
+    </ul>
+  </nav>
+
+  <div class="animation-page">
+    <div class="animation-page__header">
+      <div class="animation-page__breadcrumb">
+        <a href="../../index.html">home</a>
+        <span class="sep">/</span>
+        <a href="index.html">dynamic-programming</a>
+        <span class="sep">/</span>
+        <span>fibonacci</span>
+      </div>
+      <h1 class="animation-page__title">Fibonacci with Memoization</h1>
+      <p class="animation-page__subtitle">
+        Visualize the recursion tree for Fibonacci and see how memoization eliminates redundant computation.
+      </p>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="controls__btn controls__btn--primary" id="btnCompute">&#9654; Compute</button>
+      <button class="controls__btn" id="btnStep">Step</button>
+      <button class="controls__btn" id="btnReset">Reset</button>
+      <div class="controls__separator"></div>
+      <span class="controls__label">Speed</span>
+      <input type="range" class="controls__slider" id="speedSlider" min="1" max="100" value="50">
+      <div class="controls__separator"></div>
+      <span class="controls__label">N</span>
+      <input type="range" class="controls__slider" id="nSlider" min="3" max="15" value="8">
+    </div>
+
+    <div class="info-panel">
+      <div class="info-block">
+        <h4 class="info-block__title">Complexity</h4>
+        <div class="info-block__content">
+          <p>Time: <code>O(n)</code> with memoization</p>
+          <p>Time: <code>O(2<sup>n</sup>)</code> naive recursive</p>
+          <p>Space: <code>O(n)</code> memo table + call stack</p>
+          <p style="margin-top:0.75rem; color: var(--text-muted);">Memoization converts exponential to linear by caching subproblem results.</p>
+        </div>
+      </div>
+      <div class="info-block">
+        <h4 class="info-block__title">How It Works</h4>
+        <div class="info-block__content">
+          <div class="step"><span class="step-num">01</span> Call fib(n) recursively: fib(n) = fib(n-1) + fib(n-2)</div>
+          <div class="step"><span class="step-num">02</span> Before computing, check memo table for cached result</div>
+          <div class="step"><span class="step-num">03</span> If cached, return immediately (cache hit)</div>
+          <div class="step"><span class="step-num">04</span> If not, compute and store result in memo table</div>
+          <div class="step"><span class="step-num">05</span> Memoization prunes the recursion tree dramatically</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    cs_animations — built for learning
+  </footer>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const COLORS = {
+      primary:   '#cbb2ed',
+      accent:    '#f7cc93',
+      success:   '#b3e4a5',
+      error:     '#ef8aa6',
+      text:      '#e8e4f0',
+      textMuted: '#7a7494',
+      bg:        '#191623',
+      surface:   '#221e30',
+      border:    '#362f4a',
+    };
+
+    let N = 8;
+    let speed = 50;
+    let running = false;
+    let stepQueue = [];
+    let nodes = [];
+    let edges = [];
+    let memo = {};
+    let memoDisplay = {};
+
+    function resize() {
+      const container = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = container.clientWidth * dpr;
+      canvas.height = 500 * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = container.clientWidth + 'px';
+      canvas.style.height = '500px';
+    }
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function getDelay() {
+      return Math.max(10, 500 - (speed / 100) * 490);
+    }
+
+    // Build recursion tree structure with memoization
+    function buildTree(n, depth, parentId) {
+      const id = nodes.length;
+      const node = { id, value: n, depth, state: 'idle', result: null, x: 0, y: 0 };
+      nodes.push(node);
+
+      if (parentId !== null) {
+        edges.push({ from: parentId, to: id });
+      }
+
+      if (n <= 1) {
+        // base case - will be resolved immediately
+      } else {
+        // Check if this would be a memo hit in the actual computation
+        // We build the full tree shape but mark memo hits during step generation
+        buildTree(n - 1, depth + 1, id);
+        buildTree(n - 2, depth + 1, id);
+      }
+
+      return id;
+    }
+
+    function layoutTree() {
+      if (nodes.length === 0) return;
+
+      const w = canvas.clientWidth;
+      const h = 500;
+      const memoHeight = 60;
+      const topPad = 40;
+      const availH = h - memoHeight - topPad - 20;
+
+      // Find max depth
+      let maxDepth = 0;
+      nodes.forEach(n => { if (n.depth > maxDepth) maxDepth = n.depth; });
+
+      const levelHeight = maxDepth > 0 ? availH / (maxDepth + 1) : availH;
+
+      // Group by depth
+      const levels = {};
+      nodes.forEach(n => {
+        if (!levels[n.depth]) levels[n.depth] = [];
+        levels[n.depth].push(n);
+      });
+
+      // Position nodes using simple horizontal spacing per level
+      for (let d = 0; d <= maxDepth; d++) {
+        const nodesAtLevel = levels[d] || [];
+        const count = nodesAtLevel.length;
+        const spacing = w / (count + 1);
+        nodesAtLevel.forEach((n, i) => {
+          n.x = spacing * (i + 1);
+          n.y = topPad + d * levelHeight + 20;
+        });
+      }
+
+      // Refine: center children under parents
+      for (let pass = 0; pass < 3; pass++) {
+        for (let d = maxDepth; d >= 0; d--) {
+          const nodesAtLevel = levels[d] || [];
+          nodesAtLevel.forEach(node => {
+            const children = edges.filter(e => e.from === node.id).map(e => nodes[e.to]);
+            if (children.length > 0) {
+              const avgX = children.reduce((s, c) => s + c.x, 0) / children.length;
+              node.x = avgX;
+            }
+          });
+        }
+        // Spread nodes at each level to avoid overlap
+        for (let d = 0; d <= maxDepth; d++) {
+          const nodesAtLevel = levels[d] || [];
+          nodesAtLevel.sort((a, b) => a.x - b.x);
+          const minGap = 36;
+          for (let i = 1; i < nodesAtLevel.length; i++) {
+            if (nodesAtLevel[i].x - nodesAtLevel[i - 1].x < minGap) {
+              nodesAtLevel[i].x = nodesAtLevel[i - 1].x + minGap;
+            }
+          }
+          // Re-center
+          if (nodesAtLevel.length > 0) {
+            const totalW = nodesAtLevel[nodesAtLevel.length - 1].x - nodesAtLevel[0].x;
+            const offset = (w - totalW) / 2 - nodesAtLevel[0].x;
+            nodesAtLevel.forEach(n => n.x += offset);
+          }
+        }
+      }
+    }
+
+    function generateSteps() {
+      const steps = [];
+      const m = {};
+
+      function fib(n, nodeIdx) {
+        steps.push({ type: 'computing', nodeId: nodeIdx });
+
+        if (n <= 1) {
+          steps.push({ type: 'complete', nodeId: nodeIdx, result: n, memoKey: n });
+          m[n] = n;
+          return n;
+        }
+
+        if (m[n] !== undefined) {
+          steps.push({ type: 'cached', nodeId: nodeIdx, result: m[n], memoKey: n });
+          return m[n];
+        }
+
+        // Find children edges
+        const childEdges = edges.filter(e => e.from === nodeIdx);
+        const leftChild = childEdges[0] ? childEdges[0].to : null;
+        const rightChild = childEdges[1] ? childEdges[1].to : null;
+
+        const left = fib(n - 1, leftChild);
+        const right = fib(n - 2, rightChild);
+        const result = left + right;
+        m[n] = result;
+        steps.push({ type: 'complete', nodeId: nodeIdx, result, memoKey: n });
+        return result;
+      }
+
+      fib(N, 0);
+      return steps;
+    }
+
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = 500;
+      ctx.clearRect(0, 0, w, h);
+
+      // Draw edges
+      edges.forEach(e => {
+        const from = nodes[e.from];
+        const to = nodes[e.to];
+        if (!from || !to) return;
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y + 14);
+        ctx.lineTo(to.x, to.y - 14);
+        ctx.strokeStyle = COLORS.border;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      });
+
+      // Draw nodes
+      const radius = 14;
+      nodes.forEach(node => {
+        let fillColor = COLORS.surface;
+        let strokeColor = COLORS.border;
+        let textColor = COLORS.textMuted;
+        let glow = false;
+
+        if (node.state === 'computing') {
+          fillColor = COLORS.primary;
+          strokeColor = COLORS.primary;
+          textColor = COLORS.bg;
+          glow = true;
+        } else if (node.state === 'cached') {
+          fillColor = COLORS.accent;
+          strokeColor = COLORS.accent;
+          textColor = COLORS.bg;
+          glow = true;
+        } else if (node.state === 'complete') {
+          fillColor = COLORS.success;
+          strokeColor = COLORS.success;
+          textColor = COLORS.bg;
+        }
+
+        if (glow) {
+          ctx.shadowColor = fillColor;
+          ctx.shadowBlur = 15;
+        }
+
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
+        // Label
+        ctx.fillStyle = textColor;
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('f(' + node.value + ')', node.x, node.y);
+
+        // Result above
+        if (node.result !== null) {
+          ctx.fillStyle = COLORS.text;
+          ctx.font = '9px JetBrains Mono, monospace';
+          ctx.fillText('=' + node.result, node.x, node.y - radius - 8);
+        }
+      });
+
+      // Draw memo table at bottom
+      const memoY = h - 50;
+      const cellW = Math.min(40, (w - 80) / (N + 1));
+      const startX = (w - cellW * (N + 1)) / 2;
+
+      ctx.fillStyle = COLORS.textMuted;
+      ctx.font = '10px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('memo table', w / 2, memoY - 14);
+
+      for (let i = 0; i <= N; i++) {
+        const x = startX + i * cellW;
+        ctx.fillStyle = memoDisplay[i] !== undefined ? COLORS.surface : COLORS.bg;
+        ctx.strokeStyle = COLORS.border;
+        ctx.lineWidth = 1;
+        ctx.fillRect(x, memoY, cellW - 2, 24);
+        ctx.strokeRect(x, memoY, cellW - 2, 24);
+
+        // Index
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.font = '8px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(i, x + (cellW - 2) / 2, memoY + 34);
+
+        // Value
+        if (memoDisplay[i] !== undefined) {
+          ctx.fillStyle = COLORS.accent;
+          ctx.font = '10px JetBrains Mono, monospace';
+          ctx.fillText(memoDisplay[i], x + (cellW - 2) / 2, memoY + 14);
+        }
+      }
+
+      // Status
+      ctx.fillStyle = COLORS.textMuted;
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      let status = 'ready';
+      if (running) status = 'computing...';
+      if (!running && Object.keys(memoDisplay).length > 0) status = 'complete';
+      ctx.fillText('n=' + N + '  |  ' + status, 40, 20);
+    }
+
+    function executeStep(step) {
+      return new Promise(resolve => {
+        const node = nodes[step.nodeId];
+        if (!node) { resolve(); return; }
+
+        if (step.type === 'computing') {
+          node.state = 'computing';
+          draw();
+          setTimeout(resolve, getDelay());
+        } else if (step.type === 'cached') {
+          node.state = 'cached';
+          node.result = step.result;
+          draw();
+          setTimeout(resolve, getDelay());
+        } else if (step.type === 'complete') {
+          node.state = 'complete';
+          node.result = step.result;
+          memoDisplay[step.memoKey] = step.result;
+          draw();
+          setTimeout(resolve, getDelay() * 0.5);
+        } else {
+          resolve();
+        }
+      });
+    }
+
+    function reset() {
+      running = false;
+      nodes = [];
+      edges = [];
+      memo = {};
+      memoDisplay = {};
+      stepQueue = [];
+      buildTree(N, 0, null);
+      layoutTree();
+      updateBtn();
+      draw();
+    }
+
+    async function compute() {
+      if (running) {
+        running = false;
+        updateBtn();
+        return;
+      }
+
+      if (stepQueue.length === 0) {
+        reset();
+        stepQueue = generateSteps();
+      }
+
+      running = true;
+      updateBtn();
+
+      while (stepQueue.length > 0 && running) {
+        const step = stepQueue.shift();
+        await executeStep(step);
+      }
+
+      running = false;
+      updateBtn();
+      draw();
+    }
+
+    async function stepOne() {
+      if (running) return;
+      if (stepQueue.length === 0) {
+        reset();
+        stepQueue = generateSteps();
+      }
+      if (stepQueue.length > 0) {
+        const s = stepQueue.shift();
+        await executeStep(s);
+      }
+    }
+
+    function updateBtn() {
+      document.getElementById('btnCompute').textContent = running ? '❚❚ Pause' : '▶ Compute';
+    }
+
+    document.getElementById('btnCompute').addEventListener('click', compute);
+    document.getElementById('btnStep').addEventListener('click', stepOne);
+    document.getElementById('btnReset').addEventListener('click', reset);
+    document.getElementById('speedSlider').addEventListener('input', e => {
+      speed = parseInt(e.target.value);
+    });
+    document.getElementById('nSlider').addEventListener('input', e => {
+      N = parseInt(e.target.value);
+      reset();
+    });
+    window.addEventListener('resize', () => { resize(); layoutTree(); draw(); });
+
+    resize();
+    reset();
+  })();
+  </script>
+</body>
+</html>

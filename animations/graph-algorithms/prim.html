@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prim's Algorithm — CS Animations</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../../index.html" class="nav__logo">
+      <span>&gt;</span> cs_animations
+    </a>
+    <ul class="nav__links">
+      <li><a href="../../index.html#categories">Browse</a></li>
+    </ul>
+  </nav>
+
+  <div class="animation-page">
+    <div class="animation-page__header">
+      <div class="animation-page__breadcrumb">
+        <a href="../../index.html">home</a>
+        <span class="sep">/</span>
+        <a href="index.html">graph-algorithms</a>
+        <span class="sep">/</span>
+        <span>prim</span>
+      </div>
+      <h1 class="animation-page__title">Prim's Algorithm</h1>
+      <p class="animation-page__subtitle">
+        Grow a minimum spanning tree one vertex at a time, always adding the cheapest edge connecting the tree to a new vertex.
+      </p>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="controls__btn controls__btn--primary" id="btnPlay">&#9654; Start</button>
+      <button class="controls__btn" id="btnStep">Step</button>
+      <button class="controls__btn" id="btnReset">Reset</button>
+      <div class="controls__separator"></div>
+      <span class="controls__label">Speed</span>
+      <input type="range" class="controls__slider" id="speedSlider" min="1" max="100" value="50">
+    </div>
+
+    <div class="info-panel">
+      <div class="info-block">
+        <h4 class="info-block__title">Complexity</h4>
+        <div class="info-block__content">
+          <p>Time: <code>O(E log V)</code> with priority queue</p>
+          <p>Time: <code>O(V&sup2;)</code> with adjacency matrix</p>
+          <p>Space: <code>O(V)</code></p>
+          <p style="margin-top:0.75rem; color: var(--text-muted);">Greedy algorithm — grows a single tree from the starting vertex.</p>
+        </div>
+      </div>
+      <div class="info-block">
+        <h4 class="info-block__title">How It Works</h4>
+        <div class="info-block__content">
+          <div class="step"><span class="step-num">01</span> Start from node 0 and add it to the MST</div>
+          <div class="step"><span class="step-num">02</span> Find all edges connecting MST to non-MST vertices</div>
+          <div class="step"><span class="step-num">03</span> Select the edge with minimum weight</div>
+          <div class="step"><span class="step-num">04</span> Add the new vertex and edge to the MST</div>
+          <div class="step"><span class="step-num">05</span> Repeat until all vertices are in the MST</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    cs_animations — built for learning
+  </footer>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let running = false;
+    let speed = 50;
+    let stepQueue = [];
+    let nodes = [];
+    let edges = [];
+    let adjList = {};
+    let nodeStates = {};   // 'unvisited' | 'frontier' | 'mst'
+    let edgeStates = {};   // 'default' | 'candidate' | 'selected' | 'mst'
+    let mstWeight = 0;
+    const NUM_NODES = 9;
+
+    const COLORS = {
+      primary:   '#cbb2ed',
+      secondary: '#a8d8df',
+      accent:    '#f7cc93',
+      success:   '#b3e4a5',
+      error:     '#ef8aa6',
+      text:      '#e8e4f0',
+      textMuted: '#7a7494',
+      bg:        '#191623',
+      surface:   '#221e30',
+      border:    '#362f4a',
+      node:      '#3d3656',
+      edge:      '#362f4a',
+    };
+
+    function resize() {
+      const container = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = container.clientWidth * dpr;
+      canvas.height = 500 * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = container.clientWidth + 'px';
+      canvas.style.height = '500px';
+    }
+
+    function generateGraph() {
+      nodes = [];
+      edges = [];
+      adjList = {};
+      nodeStates = {};
+      edgeStates = {};
+      mstWeight = 0;
+
+      const w = canvas.clientWidth;
+      const h = 500;
+      const padding = 60;
+
+      const cols = 3;
+      const rows = 3;
+      const cellW = (w - padding * 2) / (cols - 1);
+      const cellH = (h - padding * 2) / (rows - 1);
+
+      for (let i = 0; i < NUM_NODES; i++) {
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+        const jitterX = (Math.random() - 0.5) * cellW * 0.25;
+        const jitterY = (Math.random() - 0.5) * cellH * 0.25;
+        nodes.push({
+          id: i,
+          x: padding + col * cellW + jitterX,
+          y: padding + row * cellH + jitterY
+        });
+        adjList[i] = [];
+        nodeStates[i] = 'unvisited';
+      }
+
+      // Spanning tree
+      const connected = [0];
+      const unconnected = [];
+      for (let i = 1; i < NUM_NODES; i++) unconnected.push(i);
+
+      while (unconnected.length > 0) {
+        const fi = Math.floor(Math.random() * connected.length);
+        const ti = Math.floor(Math.random() * unconnected.length);
+        const from = connected[fi];
+        const to = unconnected[ti];
+        const weight = Math.floor(Math.random() * 9) + 1;
+        addEdge(from, to, weight);
+        connected.push(to);
+        unconnected.splice(ti, 1);
+      }
+
+      // Extra edges
+      const extra = 5 + Math.floor(Math.random() * 4);
+      for (let e = 0; e < extra; e++) {
+        const a = Math.floor(Math.random() * NUM_NODES);
+        let b = Math.floor(Math.random() * NUM_NODES);
+        if (a === b) b = (b + 1) % NUM_NODES;
+        if (!hasEdge(a, b)) {
+          const weight = Math.floor(Math.random() * 9) + 1;
+          addEdge(a, b, weight);
+        }
+      }
+
+      stepQueue = [];
+      running = false;
+      updatePlayBtn();
+      draw();
+    }
+
+    function addEdge(a, b, w) {
+      edges.push({ from: a, to: b, weight: w });
+      adjList[a].push({ node: b, weight: w });
+      adjList[b].push({ node: a, weight: w });
+      edgeStates[a + '-' + b] = 'default';
+    }
+
+    function hasEdge(a, b) {
+      return edges.some(e => (e.from === a && e.to === b) || (e.from === b && e.to === a));
+    }
+
+    function getEdgeState(from, to) {
+      return edgeStates[from + '-' + to] || edgeStates[to + '-' + from] || 'default';
+    }
+
+    function setEdgeState(from, to, state) {
+      const k1 = from + '-' + to;
+      const k2 = to + '-' + from;
+      if (k1 in edgeStates) edgeStates[k1] = state;
+      else if (k2 in edgeStates) edgeStates[k2] = state;
+    }
+
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = 500;
+      ctx.clearRect(0, 0, w, h);
+
+      const nodeRadius = 22;
+
+      // Draw edges
+      for (const edge of edges) {
+        const nA = nodes[edge.from];
+        const nB = nodes[edge.to];
+        const state = getEdgeState(edge.from, edge.to);
+
+        let color = COLORS.edge;
+        let lineWidth = 2;
+
+        if (state === 'candidate') {
+          color = COLORS.accent;
+          lineWidth = 2.5;
+        } else if (state === 'selected' || state === 'mst') {
+          color = COLORS.success;
+          lineWidth = 3.5;
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(nA.x, nA.y);
+        ctx.lineTo(nB.x, nB.y);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+
+        // Weight
+        const mx = (nA.x + nB.x) / 2;
+        const my = (nA.y + nB.y) / 2;
+        ctx.fillStyle = COLORS.bg;
+        ctx.beginPath();
+        ctx.arc(mx, my, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = state === 'candidate' ? COLORS.accent : (state === 'selected' || state === 'mst') ? COLORS.success : COLORS.textMuted;
+        ctx.font = '11px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(edge.weight, mx, my);
+      }
+
+      // Draw nodes
+      for (const node of nodes) {
+        const state = nodeStates[node.id];
+        let fillColor = COLORS.node;
+        let strokeColor = COLORS.border;
+        let glow = false;
+
+        if (state === 'mst') {
+          fillColor = COLORS.success;
+          strokeColor = COLORS.success;
+          glow = true;
+        } else if (state === 'frontier') {
+          fillColor = COLORS.accent;
+          strokeColor = COLORS.accent;
+          glow = true;
+        }
+
+        if (glow) {
+          ctx.shadowColor = fillColor;
+          ctx.shadowBlur = 18;
+        }
+
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, nodeRadius, 0, Math.PI * 2);
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = state === 'mst' || state === 'frontier' ? COLORS.bg : COLORS.text;
+        ctx.font = 'bold 13px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(node.id, node.x, node.y);
+      }
+
+      // Status
+      ctx.fillStyle = COLORS.textMuted;
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      const allMst = Object.values(nodeStates).every(s => s === 'mst');
+      let status = 'ready';
+      if (running) status = 'running...';
+      if (allMst && stepQueue.length === 0) status = 'MST complete \u2713  total=' + mstWeight;
+      ctx.fillText('prim | ' + status, 20, 16);
+    }
+
+    function generateSteps() {
+      const steps = [];
+      const inMST = new Set();
+      const mstEdges = [];
+
+      // Start from node 0
+      steps.push({ type: 'add-to-mst', node: 0 });
+      inMST.add(0);
+
+      while (inMST.size < NUM_NODES) {
+        // Find all candidate edges
+        let candidates = [];
+        for (const u of inMST) {
+          for (const neighbor of adjList[u]) {
+            if (!inMST.has(neighbor.node)) {
+              candidates.push({ from: u, to: neighbor.node, weight: neighbor.weight });
+            }
+          }
+        }
+
+        // Show candidate edges
+        for (const c of candidates) {
+          steps.push({ type: 'consider-edge', from: c.from, to: c.to, weight: c.weight });
+        }
+
+        if (candidates.length === 0) break;
+
+        // Pick minimum
+        candidates.sort((a, b) => a.weight - b.weight);
+        const best = candidates[0];
+
+        steps.push({ type: 'select-edge', from: best.from, to: best.to, weight: best.weight });
+        steps.push({ type: 'add-to-mst', node: best.to });
+        inMST.add(best.to);
+
+        // Clear non-selected candidates
+        steps.push({ type: 'clear-candidates', except: { from: best.from, to: best.to } });
+      }
+
+      steps.push({ type: 'complete' });
+      return steps;
+    }
+
+    function executeStep(step) {
+      return new Promise(resolve => {
+        if (step.type === 'add-to-mst') {
+          nodeStates[step.node] = 'mst';
+          // Mark frontier neighbors
+          for (const neighbor of adjList[step.node]) {
+            if (nodeStates[neighbor.node] === 'unvisited') {
+              nodeStates[neighbor.node] = 'frontier';
+            }
+          }
+          draw();
+          setTimeout(resolve, getDelay());
+        } else if (step.type === 'consider-edge') {
+          setEdgeState(step.from, step.to, 'candidate');
+          draw();
+          setTimeout(resolve, getDelay() * 0.3);
+        } else if (step.type === 'select-edge') {
+          setEdgeState(step.from, step.to, 'mst');
+          mstWeight += step.weight;
+          draw();
+          setTimeout(resolve, getDelay());
+        } else if (step.type === 'clear-candidates') {
+          for (const edge of edges) {
+            const state = getEdgeState(edge.from, edge.to);
+            if (state === 'candidate') {
+              setEdgeState(edge.from, edge.to, 'default');
+            }
+          }
+          draw();
+          setTimeout(resolve, getDelay() * 0.3);
+        } else if (step.type === 'complete') {
+          // Clear any remaining frontier states
+          for (let i = 0; i < NUM_NODES; i++) {
+            if (nodeStates[i] === 'frontier') nodeStates[i] = 'mst';
+          }
+          draw();
+          resolve();
+        }
+      });
+    }
+
+    function getDelay() {
+      return Math.max(10, 500 - (speed / 100) * 490);
+    }
+
+    async function play() {
+      if (running) {
+        running = false;
+        updatePlayBtn();
+        return;
+      }
+
+      if (stepQueue.length === 0) {
+        resetStates();
+        stepQueue = generateSteps();
+      }
+
+      running = true;
+      updatePlayBtn();
+
+      while (stepQueue.length > 0 && running) {
+        const step = stepQueue.shift();
+        await executeStep(step);
+      }
+
+      if (stepQueue.length === 0) {
+        running = false;
+        draw();
+      }
+      updatePlayBtn();
+    }
+
+    async function step() {
+      if (running) return;
+      if (stepQueue.length === 0) {
+        resetStates();
+        stepQueue = generateSteps();
+      }
+      if (stepQueue.length > 0) {
+        const s = stepQueue.shift();
+        await executeStep(s);
+        if (stepQueue.length === 0) draw();
+      }
+    }
+
+    function resetStates() {
+      for (let i = 0; i < NUM_NODES; i++) {
+        nodeStates[i] = 'unvisited';
+      }
+      for (const key in edgeStates) {
+        edgeStates[key] = 'default';
+      }
+      mstWeight = 0;
+    }
+
+    function updatePlayBtn() {
+      const btn = document.getElementById('btnPlay');
+      btn.textContent = running ? '\u275A\u275A Pause' : '\u25B6 Start';
+    }
+
+    document.getElementById('btnPlay').addEventListener('click', play);
+    document.getElementById('btnStep').addEventListener('click', step);
+    document.getElementById('btnReset').addEventListener('click', () => {
+      running = false;
+      generateGraph();
+    });
+    document.getElementById('speedSlider').addEventListener('input', (e) => {
+      speed = parseInt(e.target.value);
+    });
+
+    window.addEventListener('resize', () => {
+      resize();
+      draw();
+    });
+
+    resize();
+    generateGraph();
+  })();
+  </script>
+</body>
+</html>

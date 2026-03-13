@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Queue — CS Animations</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../../index.html" class="nav__logo">
+      <span>&gt;</span> cs_animations
+    </a>
+    <ul class="nav__links">
+      <li><a href="../../index.html#categories">Browse</a></li>
+    </ul>
+  </nav>
+
+  <div class="animation-page">
+    <div class="animation-page__header">
+      <div class="animation-page__breadcrumb">
+        <a href="../../index.html">home</a>
+        <span class="sep">/</span>
+        <a href="index.html">data-structures</a>
+        <span class="sep">/</span>
+        <span>queue</span>
+      </div>
+      <h1 class="animation-page__title">Queue</h1>
+      <p class="animation-page__subtitle">
+        A First-In, First-Out (FIFO) collection — elements are added at the rear and removed from the front.
+      </p>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="controls__btn controls__btn--primary" id="btnEnqueue">Enqueue</button>
+      <button class="controls__btn" id="btnDequeue">Dequeue</button>
+      <button class="controls__btn" id="btnPeek">Peek</button>
+      <button class="controls__btn" id="btnReset">Reset</button>
+      <div class="controls__separator"></div>
+      <span class="controls__label">Speed</span>
+      <input type="range" class="controls__slider" id="speedSlider" min="1" max="100" value="50">
+    </div>
+
+    <div class="info-panel">
+      <div class="info-block">
+        <h4 class="info-block__title">Complexity</h4>
+        <div class="info-block__content">
+          <p>Enqueue: <code>O(1)</code></p>
+          <p>Dequeue: <code>O(1)</code></p>
+          <p>Peek: <code>O(1)</code></p>
+          <p>Search: <code>O(n)</code></p>
+          <p style="margin-top:0.75rem; color: var(--text-muted);">Used in BFS, task scheduling, and buffering.</p>
+        </div>
+      </div>
+      <div class="info-block">
+        <h4 class="info-block__title">How It Works</h4>
+        <div class="info-block__content">
+          <div class="step"><span class="step-num">01</span> Enqueue adds element to the REAR</div>
+          <div class="step"><span class="step-num">02</span> Dequeue removes element from the FRONT</div>
+          <div class="step"><span class="step-num">03</span> Peek returns front element without removing</div>
+          <div class="step"><span class="step-num">04</span> Maintains insertion order (FIFO)</div>
+          <div class="step"><span class="step-num">05</span> Can be implemented with array or linked list</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    cs_animations — built for learning
+  </footer>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const COLORS = {
+      primary:   '#cbb2ed',
+      secondary: '#f0c6c3',
+      accent:    '#f7cc93',
+      highlight: '#a8d8df',
+      success:   '#b3e4a5',
+      text:      '#e8e4f0',
+      textMuted: '#7a7494',
+      bg:        '#191623',
+      surface:   '#221e30',
+      border:    '#362f4a',
+    };
+
+    const MAX_SIZE = 12;
+    let queue = [];
+    let speed = 50;
+    let animating = false;
+    let peekIndex = -1;
+    let enqueueAnim = { active: false, progress: 0, value: 0 };
+    let dequeueAnim = { active: false, progress: 0, value: 0 };
+    let statusText = 'ready';
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function getDelay() {
+      return Math.max(10, 500 - (speed / 100) * 490);
+    }
+
+    function resize() {
+      const container = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = container.clientWidth * dpr;
+      canvas.height = 500 * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = container.clientWidth + 'px';
+      canvas.style.height = '500px';
+    }
+
+    function generateQueue() {
+      queue = [];
+      for (let i = 0; i < 5; i++) {
+        queue.push(Math.floor(Math.random() * 99) + 1);
+      }
+      peekIndex = -1;
+      enqueueAnim.active = false;
+      dequeueAnim.active = false;
+      animating = false;
+      statusText = 'ready';
+      draw();
+    }
+
+    function getBlockMetrics() {
+      const w = canvas.clientWidth;
+      const blockW = 70;
+      const blockH = 50;
+      const gap = 6;
+      const totalW = queue.length * (blockW + gap) - gap;
+      const startX = (w - totalW) / 2;
+      const centerY = 250;
+      return { blockW, blockH, gap, startX, centerY, w };
+    }
+
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = 500;
+      ctx.clearRect(0, 0, w, h);
+
+      const blockW = 70;
+      const blockH = 50;
+      const gap = 6;
+      const totalW = queue.length * (blockW + gap) - (queue.length > 0 ? gap : 0);
+      const startX = (w - totalW) / 2;
+      const centerY = 230;
+
+      if (queue.length === 0 && !enqueueAnim.active && !dequeueAnim.active) {
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.font = '14px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('Empty queue — enqueue to begin', w / 2, h / 2);
+        drawStatus(w);
+        return;
+      }
+
+      // Direction arrow
+      if (queue.length > 1) {
+        const arrowY = centerY + blockH + 50;
+        const ax1 = startX + 20;
+        const ax2 = startX + totalW - 20;
+        ctx.beginPath();
+        ctx.moveTo(ax1, arrowY);
+        ctx.lineTo(ax2, arrowY);
+        ctx.strokeStyle = COLORS.textMuted;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Arrow pointing left (dequeue direction)
+        ctx.beginPath();
+        ctx.moveTo(ax1 + 8, arrowY - 5);
+        ctx.lineTo(ax1, arrowY);
+        ctx.lineTo(ax1 + 8, arrowY + 5);
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.fill();
+
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('dequeue direction', (ax1 + ax2) / 2, arrowY + 8);
+      }
+
+      // Draw queue blocks
+      for (let i = 0; i < queue.length; i++) {
+        const x = startX + i * (blockW + gap);
+        const y = centerY;
+        const isFront = i === 0;
+        const isRear = i === queue.length - 1;
+        const isPeeked = peekIndex === i;
+
+        let fillColor = COLORS.surface;
+        let borderColor = COLORS.border;
+        let glowing = false;
+
+        if (isPeeked) {
+          fillColor = COLORS.highlight;
+          borderColor = COLORS.highlight;
+          glowing = true;
+        }
+
+        if (glowing) {
+          ctx.shadowColor = fillColor;
+          ctx.shadowBlur = 16;
+        }
+
+        const r = 6;
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + blockW - r, y);
+        ctx.quadraticCurveTo(x + blockW, y, x + blockW, y + r);
+        ctx.lineTo(x + blockW, y + blockH - r);
+        ctx.quadraticCurveTo(x + blockW, y + blockH, x + blockW - r, y + blockH);
+        ctx.lineTo(x + r, y + blockH);
+        ctx.quadraticCurveTo(x, y + blockH, x, y + blockH - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
+        // Value
+        ctx.fillStyle = COLORS.text;
+        ctx.font = 'bold 16px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(queue[i], x + blockW / 2, y + blockH / 2);
+
+        // FRONT / REAR labels
+        if (isFront) {
+          ctx.fillStyle = COLORS.success;
+          ctx.font = 'bold 11px JetBrains Mono, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText('FRONT', x + blockW / 2, y - 12);
+          // Arrow down
+          ctx.beginPath();
+          ctx.moveTo(x + blockW / 2, y - 10);
+          ctx.lineTo(x + blockW / 2, y - 2);
+          ctx.strokeStyle = COLORS.success;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x + blockW / 2 - 4, y - 6);
+          ctx.lineTo(x + blockW / 2, y - 1);
+          ctx.lineTo(x + blockW / 2 + 4, y - 6);
+          ctx.fillStyle = COLORS.success;
+          ctx.fill();
+        }
+        if (isRear) {
+          ctx.fillStyle = COLORS.accent;
+          ctx.font = 'bold 11px JetBrains Mono, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText('REAR', x + blockW / 2, y - 12);
+          if (!isFront) {
+            ctx.beginPath();
+            ctx.moveTo(x + blockW / 2, y - 10);
+            ctx.lineTo(x + blockW / 2, y - 2);
+            ctx.strokeStyle = COLORS.accent;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x + blockW / 2 - 4, y - 6);
+            ctx.lineTo(x + blockW / 2, y - 1);
+            ctx.lineTo(x + blockW / 2 + 4, y - 6);
+            ctx.fillStyle = COLORS.accent;
+            ctx.fill();
+          }
+        }
+      }
+
+      // Enqueue animation: block sliding in from right
+      if (enqueueAnim.active) {
+        const targetX = startX + queue.length * (blockW + gap);
+        const fromX = w + blockW;
+        const t = easeInOutCubic(enqueueAnim.progress);
+        const x = fromX + (targetX - fromX) * t;
+        const y = centerY;
+
+        ctx.shadowColor = COLORS.accent;
+        ctx.shadowBlur = 16;
+
+        const r = 6;
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + blockW - r, y);
+        ctx.quadraticCurveTo(x + blockW, y, x + blockW, y + r);
+        ctx.lineTo(x + blockW, y + blockH - r);
+        ctx.quadraticCurveTo(x + blockW, y + blockH, x + blockW - r, y + blockH);
+        ctx.lineTo(x + r, y + blockH);
+        ctx.quadraticCurveTo(x, y + blockH, x, y + blockH - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+
+        ctx.fillStyle = COLORS.accent;
+        ctx.fill();
+        ctx.strokeStyle = COLORS.accent;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = COLORS.text;
+        ctx.font = 'bold 16px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(enqueueAnim.value, x + blockW / 2, y + blockH / 2);
+      }
+
+      // Dequeue animation: block sliding out to left
+      if (dequeueAnim.active) {
+        const fromX = startX;
+        const toX = -blockW * 2;
+        const t = easeInOutCubic(dequeueAnim.progress);
+        const x = fromX + (toX - fromX) * t;
+        const y = centerY;
+        const alpha = 1 - t;
+
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = COLORS.secondary;
+        ctx.shadowBlur = 16;
+
+        const r = 6;
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + blockW - r, y);
+        ctx.quadraticCurveTo(x + blockW, y, x + blockW, y + r);
+        ctx.lineTo(x + blockW, y + blockH - r);
+        ctx.quadraticCurveTo(x + blockW, y + blockH, x + blockW - r, y + blockH);
+        ctx.lineTo(x + r, y + blockH);
+        ctx.quadraticCurveTo(x, y + blockH, x, y + blockH - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+
+        ctx.fillStyle = COLORS.secondary;
+        ctx.fill();
+        ctx.strokeStyle = COLORS.secondary;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = COLORS.text;
+        ctx.font = 'bold 16px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(dequeueAnim.value, x + blockW / 2, y + blockH / 2);
+
+        ctx.globalAlpha = 1;
+      }
+
+      drawStatus(w);
+    }
+
+    function drawStatus(w) {
+      ctx.fillStyle = COLORS.textMuted;
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(`size=${queue.length}  |  ${statusText}`, 40, 24);
+    }
+
+    async function enqueue() {
+      if (animating || queue.length >= MAX_SIZE) return;
+      animating = true;
+      const val = Math.floor(Math.random() * 99) + 1;
+      enqueueAnim.value = val;
+      enqueueAnim.active = true;
+      statusText = `enqueuing ${val}...`;
+
+      const frames = 30;
+      for (let f = 0; f <= frames; f++) {
+        enqueueAnim.progress = f / frames;
+        draw();
+        await new Promise(r => requestAnimationFrame(r));
+      }
+
+      queue.push(val);
+      enqueueAnim.active = false;
+      statusText = `enqueued ${val} at rear`;
+      draw();
+      animating = false;
+    }
+
+    async function dequeue() {
+      if (animating || queue.length === 0) return;
+      animating = true;
+      const val = queue.shift();
+      dequeueAnim.value = val;
+      dequeueAnim.active = true;
+      statusText = `dequeuing ${val}...`;
+
+      const frames = 30;
+      for (let f = 0; f <= frames; f++) {
+        dequeueAnim.progress = f / frames;
+        draw();
+        await new Promise(r => requestAnimationFrame(r));
+      }
+
+      dequeueAnim.active = false;
+      statusText = `dequeued ${val} from front`;
+      draw();
+      animating = false;
+    }
+
+    async function peek() {
+      if (animating || queue.length === 0) return;
+      animating = true;
+      peekIndex = 0;
+      statusText = `peek → ${queue[0]} (front)`;
+      draw();
+
+      await new Promise(r => setTimeout(r, getDelay() * 10));
+
+      peekIndex = -1;
+      draw();
+      animating = false;
+    }
+
+    // Events
+    document.getElementById('btnEnqueue').addEventListener('click', enqueue);
+    document.getElementById('btnDequeue').addEventListener('click', dequeue);
+    document.getElementById('btnPeek').addEventListener('click', peek);
+    document.getElementById('btnReset').addEventListener('click', generateQueue);
+    document.getElementById('speedSlider').addEventListener('input', (e) => {
+      speed = parseInt(e.target.value);
+    });
+
+    window.addEventListener('resize', () => { resize(); draw(); });
+
+    resize();
+    generateQueue();
+  })();
+  </script>
+</body>
+</html>

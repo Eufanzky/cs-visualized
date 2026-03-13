@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hash Table — CS Animations</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../../index.html" class="nav__logo">
+      <span>&gt;</span> cs_animations
+    </a>
+    <ul class="nav__links">
+      <li><a href="../../index.html#categories">Browse</a></li>
+    </ul>
+  </nav>
+
+  <div class="animation-page">
+    <div class="animation-page__header">
+      <div class="animation-page__breadcrumb">
+        <a href="../../index.html">home</a>
+        <span class="sep">/</span>
+        <a href="index.html">data-structures</a>
+        <span class="sep">/</span>
+        <span>hash-table</span>
+      </div>
+      <h1 class="animation-page__title">Hash Table</h1>
+      <p class="animation-page__subtitle">
+        Maps keys to values using a hash function — achieving near-constant time lookups with collision handling via chaining.
+      </p>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="controls__btn controls__btn--primary" id="btnInsert">+ Insert</button>
+      <button class="controls__btn" id="btnLookup">Lookup</button>
+      <button class="controls__btn" id="btnDelete">Delete</button>
+      <button class="controls__btn" id="btnReset">Reset</button>
+      <div class="controls__separator"></div>
+      <span class="controls__label">Speed</span>
+      <input type="range" class="controls__slider" id="speedSlider" min="1" max="100" value="50">
+    </div>
+
+    <div class="info-panel">
+      <div class="info-block">
+        <h4 class="info-block__title">Complexity</h4>
+        <div class="info-block__content">
+          <p>Insert: <code>O(1)</code> average, <code>O(n)</code> worst</p>
+          <p>Lookup: <code>O(1)</code> average, <code>O(n)</code> worst</p>
+          <p>Delete: <code>O(1)</code> average, <code>O(n)</code> worst</p>
+          <p style="margin-top:0.75rem; color: var(--text-muted);">Worst case when all keys collide into the same bucket.</p>
+        </div>
+      </div>
+      <div class="info-block">
+        <h4 class="info-block__title">How It Works</h4>
+        <div class="info-block__content">
+          <div class="step"><span class="step-num">01</span> Hash function converts key → bucket index</div>
+          <div class="step"><span class="step-num">02</span> Element stored in the computed bucket</div>
+          <div class="step"><span class="step-num">03</span> Collisions: multiple keys map to same bucket</div>
+          <div class="step"><span class="step-num">04</span> Separate chaining: bucket holds a linked list</div>
+          <div class="step"><span class="step-num">05</span> Good hash function distributes keys uniformly</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    cs_animations — built for learning
+  </footer>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const COLORS = {
+      primary:   '#cbb2ed',
+      secondary: '#f0c6c3',
+      accent:    '#f7cc93',
+      highlight: '#a8d8df',
+      success:   '#b3e4a5',
+      text:      '#e8e4f0',
+      textMuted: '#7a7494',
+      bg:        '#191623',
+      surface:   '#221e30',
+      border:    '#362f4a',
+    };
+
+    const BUCKET_COUNT = 8;
+    let buckets = [];
+    let speed = 50;
+    let animating = false;
+    let highlightBucket = -1;
+    let highlightChainItem = null; // {bucket, index}
+    let hashAnimText = '';
+    let statusText = 'ready';
+    let nextKey = 1;
+
+    const SAMPLE_KEYS = [
+      'cat', 'dog', 'fox', 'owl', 'bee', 'ant', 'cow', 'hen',
+      'eel', 'yak', 'ram', 'bat', 'jay', 'cod', 'emu', 'elk'
+    ];
+    let usedKeys = new Set();
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function getDelay() {
+      return Math.max(10, 500 - (speed / 100) * 490);
+    }
+
+    function resize() {
+      const container = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = container.clientWidth * dpr;
+      canvas.height = 500 * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = container.clientWidth + 'px';
+      canvas.style.height = '500px';
+    }
+
+    function hashFn(key) {
+      let h = 0;
+      for (let i = 0; i < key.length; i++) {
+        h = (h * 31 + key.charCodeAt(i)) | 0;
+      }
+      return Math.abs(h) % BUCKET_COUNT;
+    }
+
+    function generateTable() {
+      buckets = [];
+      for (let i = 0; i < BUCKET_COUNT; i++) {
+        buckets.push([]);
+      }
+      usedKeys.clear();
+      // Pre-populate with a few entries
+      const initial = ['cat', 'dog', 'fox', 'owl', 'bee'];
+      for (const key of initial) {
+        const idx = hashFn(key);
+        const val = Math.floor(Math.random() * 99) + 1;
+        buckets[idx].push({ key, val });
+        usedKeys.add(key);
+      }
+      highlightBucket = -1;
+      highlightChainItem = null;
+      hashAnimText = '';
+      animating = false;
+      statusText = 'ready';
+      draw();
+    }
+
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = 500;
+      ctx.clearRect(0, 0, w, h);
+
+      const bucketW = 70;
+      const bucketH = 44;
+      const gap = 8;
+      const startX = 60;
+      const startY = 60;
+      const chainNodeW = 80;
+      const chainNodeH = 36;
+      const chainGap = 12;
+      const arrowLen = 20;
+
+      // Draw buckets and chains
+      for (let i = 0; i < BUCKET_COUNT; i++) {
+        const bx = startX;
+        const by = startY + i * (bucketH + gap);
+        const isHighlighted = highlightBucket === i;
+
+        // Bucket index label
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.font = '11px JetBrains Mono, monospace';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`[${i}]`, bx - 10, by + bucketH / 2);
+
+        // Bucket box
+        if (isHighlighted) {
+          ctx.shadowColor = COLORS.primary;
+          ctx.shadowBlur = 16;
+        }
+
+        const r = 6;
+        ctx.beginPath();
+        ctx.moveTo(bx + r, by);
+        ctx.lineTo(bx + bucketW - r, by);
+        ctx.quadraticCurveTo(bx + bucketW, by, bx + bucketW, by + r);
+        ctx.lineTo(bx + bucketW, by + bucketH - r);
+        ctx.quadraticCurveTo(bx + bucketW, by + bucketH, bx + bucketW - r, by + bucketH);
+        ctx.lineTo(bx + r, by + bucketH);
+        ctx.quadraticCurveTo(bx, by + bucketH, bx, by + bucketH - r);
+        ctx.lineTo(bx, by + r);
+        ctx.quadraticCurveTo(bx, by, bx + r, by);
+        ctx.closePath();
+
+        ctx.fillStyle = isHighlighted ? COLORS.primary : COLORS.surface;
+        ctx.fill();
+        ctx.strokeStyle = isHighlighted ? COLORS.primary : COLORS.border;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
+        // Bucket label
+        ctx.fillStyle = COLORS.text;
+        ctx.font = '12px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const bucketLabel = buckets[i].length > 0 ? `${buckets[i].length}` : '—';
+        ctx.fillText(bucketLabel, bx + bucketW / 2, by + bucketH / 2);
+
+        // Chain
+        if (buckets[i].length > 0) {
+          let cx = bx + bucketW;
+          const cy = by + bucketH / 2;
+
+          for (let j = 0; j < buckets[i].length; j++) {
+            const item = buckets[i][j];
+
+            // Arrow
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + arrowLen - 6, cy);
+            ctx.strokeStyle = COLORS.highlight;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx + arrowLen - 6, cy - 4);
+            ctx.lineTo(cx + arrowLen, cy);
+            ctx.lineTo(cx + arrowLen - 6, cy + 4);
+            ctx.fillStyle = COLORS.highlight;
+            ctx.fill();
+
+            cx += arrowLen;
+
+            // Chain node
+            const isChainHighlighted = highlightChainItem &&
+              highlightChainItem.bucket === i && highlightChainItem.index === j;
+
+            if (isChainHighlighted) {
+              ctx.shadowColor = COLORS.success;
+              ctx.shadowBlur = 16;
+            }
+
+            const cnr = 5;
+            const cny = cy - chainNodeH / 2;
+            ctx.beginPath();
+            ctx.moveTo(cx + cnr, cny);
+            ctx.lineTo(cx + chainNodeW - cnr, cny);
+            ctx.quadraticCurveTo(cx + chainNodeW, cny, cx + chainNodeW, cny + cnr);
+            ctx.lineTo(cx + chainNodeW, cny + chainNodeH - cnr);
+            ctx.quadraticCurveTo(cx + chainNodeW, cny + chainNodeH, cx + chainNodeW - cnr, cny + chainNodeH);
+            ctx.lineTo(cx + cnr, cny + chainNodeH);
+            ctx.quadraticCurveTo(cx, cny + chainNodeH, cx, cny + chainNodeH - cnr);
+            ctx.lineTo(cx, cny + cnr);
+            ctx.quadraticCurveTo(cx, cny, cx + cnr, cny);
+            ctx.closePath();
+
+            ctx.fillStyle = isChainHighlighted ? COLORS.success : COLORS.surface;
+            ctx.fill();
+            ctx.strokeStyle = isChainHighlighted ? COLORS.success : COLORS.border;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+
+            // Key:value text
+            ctx.fillStyle = COLORS.text;
+            ctx.font = '11px JetBrains Mono, monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`${item.key}:${item.val}`, cx + chainNodeW / 2, cy);
+
+            cx += chainNodeW;
+          }
+        }
+      }
+
+      // Hash animation text
+      if (hashAnimText) {
+        ctx.fillStyle = COLORS.accent;
+        ctx.font = '13px JetBrains Mono, monospace';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillText(hashAnimText, w - 40, 24);
+      }
+
+      // Status
+      ctx.fillStyle = COLORS.textMuted;
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      let totalItems = buckets.reduce((s, b) => s + b.length, 0);
+      ctx.fillText(`entries=${totalItems}  buckets=${BUCKET_COUNT}  |  ${statusText}`, 40, 24);
+    }
+
+    function getAvailableKey() {
+      const available = SAMPLE_KEYS.filter(k => !usedKeys.has(k));
+      if (available.length === 0) return null;
+      return available[Math.floor(Math.random() * available.length)];
+    }
+
+    function getAllEntries() {
+      const entries = [];
+      for (let i = 0; i < BUCKET_COUNT; i++) {
+        for (const item of buckets[i]) {
+          entries.push({ bucket: i, key: item.key, val: item.val });
+        }
+      }
+      return entries;
+    }
+
+    async function insertEntry() {
+      if (animating) return;
+      const key = getAvailableKey();
+      if (!key) { statusText = 'all keys used — reset'; draw(); return; }
+      animating = true;
+
+      const val = Math.floor(Math.random() * 99) + 1;
+      const idx = hashFn(key);
+
+      // Show hash computation
+      hashAnimText = `hash("${key}") = ${idx}`;
+      highlightBucket = idx;
+      statusText = `hashing "${key}"...`;
+      draw();
+      await new Promise(r => setTimeout(r, getDelay() * 6));
+
+      // Insert
+      buckets[idx].push({ key, val });
+      usedKeys.add(key);
+      highlightChainItem = { bucket: idx, index: buckets[idx].length - 1 };
+      statusText = `inserted "${key}":${val} → bucket[${idx}]`;
+      draw();
+      await new Promise(r => setTimeout(r, getDelay() * 6));
+
+      highlightBucket = -1;
+      highlightChainItem = null;
+      hashAnimText = '';
+      draw();
+      animating = false;
+    }
+
+    async function lookupEntry() {
+      if (animating) return;
+      const entries = getAllEntries();
+      if (entries.length === 0) return;
+      animating = true;
+
+      // Pick a random existing key (or sometimes a non-existing one)
+      let key;
+      if (Math.random() < 0.8) {
+        key = entries[Math.floor(Math.random() * entries.length)].key;
+      } else {
+        key = 'zzz';
+      }
+
+      const idx = hashFn(key);
+      hashAnimText = `hash("${key}") = ${idx}`;
+      highlightBucket = idx;
+      statusText = `looking up "${key}"...`;
+      draw();
+      await new Promise(r => setTimeout(r, getDelay() * 5));
+
+      // Search chain
+      let found = false;
+      for (let j = 0; j < buckets[idx].length; j++) {
+        highlightChainItem = { bucket: idx, index: j };
+        draw();
+        await new Promise(r => setTimeout(r, getDelay() * 4));
+        if (buckets[idx][j].key === key) {
+          statusText = `found "${key}" = ${buckets[idx][j].val}`;
+          found = true;
+          draw();
+          await new Promise(r => setTimeout(r, getDelay() * 6));
+          break;
+        }
+      }
+
+      if (!found) {
+        statusText = `"${key}" not found`;
+        draw();
+        await new Promise(r => setTimeout(r, getDelay() * 4));
+      }
+
+      highlightBucket = -1;
+      highlightChainItem = null;
+      hashAnimText = '';
+      draw();
+      animating = false;
+    }
+
+    async function deleteEntry() {
+      if (animating) return;
+      const entries = getAllEntries();
+      if (entries.length === 0) return;
+      animating = true;
+
+      const entry = entries[Math.floor(Math.random() * entries.length)];
+      const idx = hashFn(entry.key);
+
+      hashAnimText = `hash("${entry.key}") = ${idx}`;
+      highlightBucket = idx;
+      statusText = `deleting "${entry.key}"...`;
+      draw();
+      await new Promise(r => setTimeout(r, getDelay() * 5));
+
+      // Find and highlight in chain
+      for (let j = 0; j < buckets[idx].length; j++) {
+        highlightChainItem = { bucket: idx, index: j };
+        draw();
+        await new Promise(r => setTimeout(r, getDelay() * 3));
+        if (buckets[idx][j].key === entry.key) {
+          buckets[idx].splice(j, 1);
+          usedKeys.delete(entry.key);
+          statusText = `deleted "${entry.key}"`;
+          highlightChainItem = null;
+          draw();
+          await new Promise(r => setTimeout(r, getDelay() * 4));
+          break;
+        }
+      }
+
+      highlightBucket = -1;
+      highlightChainItem = null;
+      hashAnimText = '';
+      draw();
+      animating = false;
+    }
+
+    // Events
+    document.getElementById('btnInsert').addEventListener('click', insertEntry);
+    document.getElementById('btnLookup').addEventListener('click', lookupEntry);
+    document.getElementById('btnDelete').addEventListener('click', deleteEntry);
+    document.getElementById('btnReset').addEventListener('click', generateTable);
+    document.getElementById('speedSlider').addEventListener('input', (e) => {
+      speed = parseInt(e.target.value);
+    });
+
+    window.addEventListener('resize', () => { resize(); draw(); });
+
+    resize();
+    generateTable();
+  })();
+  </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bubble Sort — CS Animations</title>
+  <title>Merge Sort — CS Animations</title>
   <link rel="stylesheet" href="../../css/styles.css">
 </head>
 <body>
@@ -24,11 +24,11 @@
         <span class="sep">/</span>
         <a href="index.html">sorting-algorithms</a>
         <span class="sep">/</span>
-        <span>bubble-sort</span>
+        <span>merge-sort</span>
       </div>
-      <h1 class="animation-page__title">Bubble Sort</h1>
+      <h1 class="animation-page__title">Merge Sort</h1>
       <p class="animation-page__subtitle">
-        Repeatedly step through the list, compare adjacent elements, and swap them if they're in the wrong order.
+        Divide the array in half recursively, sort each half, then merge the sorted halves back together.
       </p>
     </div>
 
@@ -52,20 +52,19 @@
       <div class="info-block">
         <h4 class="info-block__title">Complexity</h4>
         <div class="info-block__content">
-          <p>Time: <code>O(n²)</code> worst / average</p>
-          <p>Time: <code>O(n)</code> best (already sorted)</p>
-          <p>Space: <code>O(1)</code> auxiliary</p>
+          <p>Time: <code>O(n log n)</code> worst / average / best</p>
+          <p>Space: <code>O(n)</code> auxiliary</p>
           <p style="margin-top:0.75rem; color: var(--text-muted);">Stable sort — equal elements maintain relative order.</p>
         </div>
       </div>
       <div class="info-block">
         <h4 class="info-block__title">How It Works</h4>
         <div class="info-block__content">
-          <div class="step"><span class="step-num">01</span> Compare adjacent elements</div>
-          <div class="step"><span class="step-num">02</span> Swap if left > right</div>
-          <div class="step"><span class="step-num">03</span> Largest element "bubbles" to the end</div>
-          <div class="step"><span class="step-num">04</span> Repeat for remaining unsorted portion</div>
-          <div class="step"><span class="step-num">05</span> Stop when no swaps occur in a pass</div>
+          <div class="step"><span class="step-num">01</span> Divide the array into two halves</div>
+          <div class="step"><span class="step-num">02</span> Recursively sort each half</div>
+          <div class="step"><span class="step-num">03</span> Compare front elements of both halves</div>
+          <div class="step"><span class="step-num">04</span> Place the smaller element into the merged result</div>
+          <div class="step"><span class="step-num">05</span> Repeat until all elements are merged</div>
         </div>
       </div>
     </div>
@@ -120,7 +119,7 @@
       n = size;
       arr = [];
       for (let i = 0; i < n; i++) {
-        arr.push(Math.random() * 0.85 + 0.1); // 0.1 to 0.95
+        arr.push(Math.random() * 0.85 + 0.1);
       }
       sortedIndices.clear();
       comparingIndices = [];
@@ -145,7 +144,6 @@
       const barWidth = (w - padding * 2 - totalGaps) / n;
       const maxBarHeight = h - padding * 2 - 30;
 
-      // Draw bars
       for (let i = 0; i < arr.length; i++) {
         const x = padding + i * (barWidth + gap);
         const barH = arr[i] * maxBarHeight;
@@ -170,13 +168,11 @@
           glow = true;
         }
 
-        // Glow effect
         if (glow) {
           ctx.shadowColor = color;
           ctx.shadowBlur = 20;
         }
 
-        // Bar body
         const radius = Math.min(barWidth / 2, 4);
         ctx.beginPath();
         ctx.moveTo(x + radius, y);
@@ -188,7 +184,6 @@
         ctx.quadraticCurveTo(x, y, x + radius, y);
         ctx.closePath();
 
-        // Gradient fill
         const grad = ctx.createLinearGradient(x, y, x, y + barH);
         grad.addColorStop(0, topColor);
         grad.addColorStop(1, color);
@@ -198,7 +193,6 @@
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
 
-        // Value label (only if bars are wide enough)
         if (barWidth > 18) {
           ctx.fillStyle = COLORS.textMuted;
           ctx.font = `${Math.min(10, barWidth * 0.4)}px JetBrains Mono, monospace`;
@@ -211,7 +205,6 @@
         }
       }
 
-      // Status text
       ctx.fillStyle = COLORS.textMuted;
       ctx.font = '11px JetBrains Mono, monospace';
       ctx.textAlign = 'left';
@@ -230,43 +223,73 @@
           w - padding, 24
         );
       }
-      if (swappingIndices.length === 2) {
+      if (swappingIndices.length > 0 && !comparingIndices.length) {
         ctx.fillStyle = COLORS.swapping;
         ctx.textAlign = 'right';
         ctx.fillText(
-          `swapping [${swappingIndices[0]}] ↔ [${swappingIndices[1]}]`,
+          `placing element into position`,
           w - padding, 24
         );
       }
     }
 
-    // ── Bubble Sort step generator ──
+    // ── Merge Sort step generator ──
     function generateSteps() {
       const steps = [];
       const a = [...arr];
       const len = a.length;
 
-      for (let i = 0; i < len - 1; i++) {
-        let swapped = false;
-        for (let j = 0; j < len - 1 - i; j++) {
-          steps.push({ type: 'compare', indices: [j, j + 1] });
-          if (a[j] > a[j + 1]) {
-            steps.push({ type: 'swap', indices: [j, j + 1] });
-            [a[j], a[j + 1]] = [a[j + 1], a[j]];
-            swapped = true;
+      function mergeSort(left, right) {
+        if (right - left <= 1) return;
+        const mid = Math.floor((left + right) / 2);
+        mergeSort(left, mid);
+        mergeSort(mid, right);
+        merge(left, mid, right);
+      }
+
+      function merge(left, mid, right) {
+        const temp = [];
+        let i = left, j = mid;
+
+        while (i < mid && j < right) {
+          steps.push({ type: 'compare', indices: [i, j] });
+          if (a[i] <= a[j]) {
+            temp.push(a[i]);
+            i++;
+          } else {
+            temp.push(a[j]);
+            j++;
           }
         }
-        steps.push({ type: 'sorted', index: len - 1 - i });
-        if (!swapped) {
-          // Mark remaining as sorted
-          for (let k = 0; k < len - 1 - i; k++) {
+        while (i < mid) {
+          temp.push(a[i]);
+          i++;
+        }
+        while (j < right) {
+          temp.push(a[j]);
+          j++;
+        }
+
+        for (let k = 0; k < temp.length; k++) {
+          a[left + k] = temp[k];
+          steps.push({ type: 'place', index: left + k, value: temp[k] });
+        }
+
+        // Mark this merged section as sorted if it's the final merge
+        if (left === 0 && right === len) {
+          for (let k = left; k < right; k++) {
             steps.push({ type: 'sorted', index: k });
           }
-          break;
         }
       }
-      // Mark index 0 as sorted if not already
-      steps.push({ type: 'sorted', index: 0 });
+
+      mergeSort(0, len);
+
+      // Ensure all marked sorted at end
+      for (let i = 0; i < len; i++) {
+        steps.push({ type: 'sorted', index: i });
+      }
+
       return steps;
     }
 
@@ -278,34 +301,31 @@
           swappingIndices = [];
           draw();
           setTimeout(resolve, getDelay());
-        } else if (step.type === 'swap') {
+        } else if (step.type === 'place') {
           comparingIndices = [];
-          swappingIndices = step.indices;
-          const [a, b] = step.indices;
+          swappingIndices = [step.index];
 
-          // Animate the swap
-          const startArr = [...arr];
+          const startVal = arr[step.index];
+          const endVal = step.value;
           const frames = 12;
           let frame = 0;
 
-          function animateSwap() {
+          function animatePlace() {
             frame++;
             const t = easeInOutCubic(frame / frames);
-            arr[a] = startArr[a] + (startArr[b] - startArr[a]) * t;
-            arr[b] = startArr[b] + (startArr[a] - startArr[b]) * t;
+            arr[step.index] = startVal + (endVal - startVal) * t;
             draw();
 
             if (frame < frames) {
-              requestAnimationFrame(animateSwap);
+              requestAnimationFrame(animatePlace);
             } else {
-              arr[a] = startArr[b];
-              arr[b] = startArr[a];
+              arr[step.index] = endVal;
               swappingIndices = [];
               draw();
               setTimeout(resolve, getDelay() * 0.3);
             }
           }
-          animateSwap();
+          animatePlace();
         } else if (step.type === 'sorted') {
           comparingIndices = [];
           swappingIndices = [];
@@ -321,7 +341,6 @@
     }
 
     function getDelay() {
-      // Map speed 1-100 to delay 500ms-10ms
       return Math.max(10, 500 - (speed / 100) * 490);
     }
 

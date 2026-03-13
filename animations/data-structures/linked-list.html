@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linked List — CS Animations</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../../index.html" class="nav__logo">
+      <span>&gt;</span> cs_animations
+    </a>
+    <ul class="nav__links">
+      <li><a href="../../index.html#categories">Browse</a></li>
+    </ul>
+  </nav>
+
+  <div class="animation-page">
+    <div class="animation-page__header">
+      <div class="animation-page__breadcrumb">
+        <a href="../../index.html">home</a>
+        <span class="sep">/</span>
+        <a href="index.html">data-structures</a>
+        <span class="sep">/</span>
+        <span>linked-list</span>
+      </div>
+      <h1 class="animation-page__title">Linked List</h1>
+      <p class="animation-page__subtitle">
+        A linear collection of nodes where each element points to the next — enabling efficient insertion and deletion.
+      </p>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="controls__btn controls__btn--primary" id="btnPushFront">Push Front</button>
+      <button class="controls__btn" id="btnPushBack">Push Back</button>
+      <button class="controls__btn" id="btnDelete">Delete</button>
+      <button class="controls__btn" id="btnSearch">Search</button>
+      <button class="controls__btn" id="btnReset">Reset</button>
+      <div class="controls__separator"></div>
+      <span class="controls__label">Speed</span>
+      <input type="range" class="controls__slider" id="speedSlider" min="1" max="100" value="50">
+    </div>
+
+    <div class="info-panel">
+      <div class="info-block">
+        <h4 class="info-block__title">Complexity</h4>
+        <div class="info-block__content">
+          <p>Insert at head: <code>O(1)</code></p>
+          <p>Insert at tail: <code>O(n)</code> singly linked</p>
+          <p>Search: <code>O(n)</code> — linear traversal</p>
+          <p>Delete: <code>O(n)</code> — must find predecessor</p>
+          <p style="margin-top:0.75rem; color: var(--text-muted);">Dynamic size — no wasted memory from pre-allocation.</p>
+        </div>
+      </div>
+      <div class="info-block">
+        <h4 class="info-block__title">How It Works</h4>
+        <div class="info-block__content">
+          <div class="step"><span class="step-num">01</span> Each node stores data and a pointer to the next node</div>
+          <div class="step"><span class="step-num">02</span> HEAD pointer references the first node</div>
+          <div class="step"><span class="step-num">03</span> Traversal follows pointers from HEAD to NULL</div>
+          <div class="step"><span class="step-num">04</span> Insert at head: new node points to old head</div>
+          <div class="step"><span class="step-num">05</span> Delete: update predecessor's pointer to skip node</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    cs_animations — built for learning
+  </footer>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const COLORS = {
+      primary:   '#cbb2ed',
+      secondary: '#f0c6c3',
+      accent:    '#f7cc93',
+      highlight: '#a8d8df',
+      success:   '#b3e4a5',
+      text:      '#e8e4f0',
+      textMuted: '#7a7494',
+      bg:        '#191623',
+      surface:   '#221e30',
+      border:    '#362f4a',
+    };
+
+    let nodes = [];
+    let nextId = 1;
+    let speed = 50;
+    let animating = false;
+    let visitedSet = new Set();
+    let foundIndex = -1;
+    let statusText = 'ready';
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function getDelay() {
+      return Math.max(10, 500 - (speed / 100) * 490);
+    }
+
+    function resize() {
+      const container = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = container.clientWidth * dpr;
+      canvas.height = 500 * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = container.clientWidth + 'px';
+      canvas.style.height = '500px';
+    }
+
+    function generateList() {
+      nodes = [];
+      nextId = 1;
+      for (let i = 0; i < 6; i++) {
+        nodes.push(Math.floor(Math.random() * 99) + 1);
+      }
+      visitedSet.clear();
+      foundIndex = -1;
+      animating = false;
+      statusText = 'ready';
+      draw();
+    }
+
+    function getLayout() {
+      const w = canvas.clientWidth;
+      const h = 500;
+      const nodeW = 80;
+      const nodeH = 44;
+      const arrowLen = 40;
+      const totalPerNode = nodeW + arrowLen;
+      const maxPerRow = Math.max(1, Math.floor((w - 80) / totalPerNode));
+      const rows = [];
+      let idx = 0;
+
+      while (idx < nodes.length) {
+        const count = Math.min(maxPerRow, nodes.length - idx);
+        rows.push({ start: idx, count });
+        idx += count;
+      }
+
+      const rowHeight = 80;
+      const totalHeight = rows.length * rowHeight;
+      const startY = (h - totalHeight) / 2 + 20;
+
+      const positions = [];
+      for (let r = 0; r < rows.length; r++) {
+        const row = rows[r];
+        const rowWidth = row.count * nodeW + (row.count - 1) * arrowLen;
+        const startX = (w - rowWidth) / 2;
+        for (let c = 0; c < row.count; c++) {
+          positions.push({
+            x: startX + c * (nodeW + arrowLen),
+            y: startY + r * rowHeight,
+            w: nodeW,
+            h: nodeH,
+          });
+        }
+      }
+      return positions;
+    }
+
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = 500;
+      ctx.clearRect(0, 0, w, h);
+
+      if (nodes.length === 0) {
+        ctx.fillStyle = COLORS.textMuted;
+        ctx.font = '14px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('Empty list — push a node to begin', w / 2, h / 2);
+        drawStatus(w);
+        return;
+      }
+
+      const positions = getLayout();
+      const arrowLen = 40;
+
+      for (let i = 0; i < nodes.length; i++) {
+        const p = positions[i];
+        let fillColor = COLORS.surface;
+        let borderColor = COLORS.border;
+        let glowing = false;
+
+        if (visitedSet.has(i)) {
+          fillColor = COLORS.primary;
+          borderColor = COLORS.primary;
+          glowing = true;
+        }
+        if (foundIndex === i) {
+          fillColor = COLORS.success;
+          borderColor = COLORS.success;
+          glowing = true;
+        }
+
+        if (glowing) {
+          ctx.shadowColor = fillColor;
+          ctx.shadowBlur = 16;
+        }
+
+        // Node rect
+        const r = 8;
+        ctx.beginPath();
+        ctx.moveTo(p.x + r, p.y);
+        ctx.lineTo(p.x + p.w - r, p.y);
+        ctx.quadraticCurveTo(p.x + p.w, p.y, p.x + p.w, p.y + r);
+        ctx.lineTo(p.x + p.w, p.y + p.h - r);
+        ctx.quadraticCurveTo(p.x + p.w, p.y + p.h, p.x + p.w - r, p.y + p.h);
+        ctx.lineTo(p.x + r, p.y + p.h);
+        ctx.quadraticCurveTo(p.x, p.y + p.h, p.x, p.y + p.h - r);
+        ctx.lineTo(p.x, p.y + r);
+        ctx.quadraticCurveTo(p.x, p.y, p.x + r, p.y);
+        ctx.closePath();
+
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
+        // Divider line (data | next)
+        const divX = p.x + p.w * 0.7;
+        ctx.beginPath();
+        ctx.moveTo(divX, p.y + 4);
+        ctx.lineTo(divX, p.y + p.h - 4);
+        ctx.strokeStyle = (visitedSet.has(i) || foundIndex === i) ? 'rgba(255,255,255,0.3)' : COLORS.border;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Value text
+        ctx.fillStyle = COLORS.text;
+        ctx.font = 'bold 15px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(nodes[i], p.x + p.w * 0.35, p.y + p.h / 2);
+
+        // "next" dot
+        const dotX = p.x + p.w * 0.85;
+        const dotY = p.y + p.h / 2;
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, 4, 0, Math.PI * 2);
+        ctx.fillStyle = (i < nodes.length - 1) ? COLORS.highlight : COLORS.textMuted;
+        ctx.fill();
+
+        // Arrow to next node
+        if (i < nodes.length - 1) {
+          const nextP = positions[i + 1];
+          if (Math.abs(p.y - nextP.y) < 5) {
+            // Same row — horizontal arrow
+            const ax1 = p.x + p.w;
+            const ay = p.y + p.h / 2;
+            const ax2 = nextP.x;
+            ctx.beginPath();
+            ctx.moveTo(ax1, ay);
+            ctx.lineTo(ax2 - 8, ay);
+            ctx.strokeStyle = COLORS.highlight;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            // Arrowhead
+            ctx.beginPath();
+            ctx.moveTo(ax2 - 8, ay - 5);
+            ctx.lineTo(ax2, ay);
+            ctx.lineTo(ax2 - 8, ay + 5);
+            ctx.fillStyle = COLORS.highlight;
+            ctx.fill();
+          } else {
+            // Wrap to next row — draw down and across
+            const ax1 = p.x + p.w;
+            const ay1 = p.y + p.h / 2;
+            const ax2 = nextP.x;
+            const ay2 = nextP.y + nextP.h / 2;
+            ctx.beginPath();
+            ctx.moveTo(ax1, ay1);
+            ctx.lineTo(ax1 + 15, ay1);
+            ctx.lineTo(ax1 + 15, ay2);
+            ctx.lineTo(ax2 - 8, ay2);
+            ctx.strokeStyle = COLORS.highlight;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(ax2 - 8, ay2 - 5);
+            ctx.lineTo(ax2, ay2);
+            ctx.lineTo(ax2 - 8, ay2 + 5);
+            ctx.fillStyle = COLORS.highlight;
+            ctx.fill();
+          }
+        } else {
+          // NULL terminator
+          const nx = p.x + p.w + 10;
+          const ny = p.y + p.h / 2;
+          ctx.fillStyle = COLORS.textMuted;
+          ctx.font = '11px JetBrains Mono, monospace';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('NULL', nx, ny);
+        }
+
+        // HEAD label on first node
+        if (i === 0) {
+          ctx.fillStyle = COLORS.accent;
+          ctx.font = 'bold 11px JetBrains Mono, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText('HEAD', p.x + p.w / 2, p.y - 8);
+          // Arrow from HEAD label
+          ctx.beginPath();
+          ctx.moveTo(p.x + p.w / 2, p.y - 5);
+          ctx.lineTo(p.x + p.w / 2, p.y);
+          ctx.strokeStyle = COLORS.accent;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+
+      drawStatus(w);
+    }
+
+    function drawStatus(w) {
+      ctx.fillStyle = COLORS.textMuted;
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(`nodes=${nodes.length}  |  ${statusText}`, 40, 24);
+    }
+
+    async function pushFront() {
+      if (animating || nodes.length >= 14) return;
+      animating = true;
+      const val = Math.floor(Math.random() * 99) + 1;
+      nodes.unshift(val);
+      visitedSet.clear();
+      visitedSet.add(0);
+      statusText = `pushed ${val} to front`;
+      draw();
+      await new Promise(r => setTimeout(r, getDelay() * 6));
+      visitedSet.clear();
+      draw();
+      animating = false;
+    }
+
+    async function pushBack() {
+      if (animating || nodes.length >= 14) return;
+      animating = true;
+      const val = Math.floor(Math.random() * 99) + 1;
+
+      // Traverse animation
+      statusText = 'traversing to tail...';
+      for (let i = 0; i < nodes.length; i++) {
+        visitedSet.add(i);
+        draw();
+        await new Promise(r => setTimeout(r, getDelay() * 3));
+      }
+
+      nodes.push(val);
+      visitedSet.clear();
+      visitedSet.add(nodes.length - 1);
+      statusText = `pushed ${val} to back`;
+      draw();
+      await new Promise(r => setTimeout(r, getDelay() * 4));
+      visitedSet.clear();
+      draw();
+      animating = false;
+    }
+
+    async function deleteNode() {
+      if (animating || nodes.length === 0) return;
+      animating = true;
+      const idx = Math.floor(Math.random() * nodes.length);
+      const val = nodes[idx];
+
+      // Traverse to node
+      statusText = `finding node [${idx}]...`;
+      for (let i = 0; i <= idx; i++) {
+        visitedSet.add(i);
+        draw();
+        await new Promise(r => setTimeout(r, getDelay() * 3));
+      }
+
+      nodes.splice(idx, 1);
+      visitedSet.clear();
+      statusText = `deleted ${val} from [${idx}]`;
+      draw();
+      animating = false;
+    }
+
+    async function searchNode() {
+      if (animating || nodes.length === 0) return;
+      animating = true;
+      const target = nodes[Math.floor(Math.random() * nodes.length)];
+      visitedSet.clear();
+      foundIndex = -1;
+      statusText = `searching for ${target}...`;
+
+      for (let i = 0; i < nodes.length; i++) {
+        visitedSet.add(i);
+        draw();
+        await new Promise(r => setTimeout(r, getDelay() * 4));
+
+        if (nodes[i] === target) {
+          foundIndex = i;
+          visitedSet.clear();
+          statusText = `found ${target} at [${i}]`;
+          draw();
+          await new Promise(r => setTimeout(r, getDelay() * 8));
+          foundIndex = -1;
+          draw();
+          animating = false;
+          return;
+        }
+      }
+
+      visitedSet.clear();
+      statusText = `${target} not found`;
+      draw();
+      animating = false;
+    }
+
+    // Events
+    document.getElementById('btnPushFront').addEventListener('click', pushFront);
+    document.getElementById('btnPushBack').addEventListener('click', pushBack);
+    document.getElementById('btnDelete').addEventListener('click', deleteNode);
+    document.getElementById('btnSearch').addEventListener('click', searchNode);
+    document.getElementById('btnReset').addEventListener('click', generateList);
+    document.getElementById('speedSlider').addEventListener('input', (e) => {
+      speed = parseInt(e.target.value);
+    });
+
+    window.addEventListener('resize', () => { resize(); draw(); });
+
+    resize();
+    generateList();
+  })();
+  </script>
+</body>
+</html>

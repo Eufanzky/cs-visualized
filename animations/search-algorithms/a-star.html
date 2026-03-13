@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A* Search — CS Animations</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../../index.html" class="nav__logo">
+      <span>&gt;</span> cs_animations
+    </a>
+    <ul class="nav__links">
+      <li><a href="../../index.html#categories">Browse</a></li>
+    </ul>
+  </nav>
+
+  <div class="animation-page">
+    <div class="animation-page__header">
+      <div class="animation-page__breadcrumb">
+        <a href="../../index.html">home</a>
+        <span class="sep">/</span>
+        <a href="index.html">search-algorithms</a>
+        <span class="sep">/</span>
+        <span>a-star</span>
+      </div>
+      <h1 class="animation-page__title">A* Search</h1>
+      <p class="animation-page__subtitle">
+        Find the shortest path on a grid using heuristic-guided search that combines cost-so-far with estimated cost-to-goal.
+      </p>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="controls__btn controls__btn--primary" id="btnPlay">&#9654; Start Search</button>
+      <button class="controls__btn" id="btnStep">Step</button>
+      <button class="controls__btn" id="btnReset">Reset</button>
+      <div class="controls__separator"></div>
+      <span class="controls__label">Speed</span>
+      <input type="range" class="controls__slider" id="speedSlider" min="1" max="100" value="50">
+    </div>
+
+    <div class="info-panel">
+      <div class="info-block">
+        <h4 class="info-block__title">Complexity</h4>
+        <div class="info-block__content">
+          <p>Time: <code>O(E)</code> worst case (E = edges)</p>
+          <p>Space: <code>O(V)</code></p>
+          <p style="margin-top:0.75rem; color: var(--text-muted);">Optimal with admissible heuristic. Combines Dijkstra's algorithm with greedy best-first search.</p>
+        </div>
+      </div>
+      <div class="info-block">
+        <h4 class="info-block__title">How It Works</h4>
+        <div class="info-block__content">
+          <div class="step"><span class="step-num">01</span> f(n) = g(n) + h(n) where g = cost so far, h = heuristic</div>
+          <div class="step"><span class="step-num">02</span> Add start to open set with f = h(start)</div>
+          <div class="step"><span class="step-num">03</span> Pick node with lowest f from open set</div>
+          <div class="step"><span class="step-num">04</span> Expand neighbors, update costs if better path found</div>
+          <div class="step"><span class="step-num">05</span> Reconstruct path when goal is reached</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    cs_animations — built for learning
+  </footer>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let running = false;
+    let speed = 50;
+    let stepQueue = [];
+
+    const C = {
+      primary:   '#cbb2ed',
+      accent:    '#f7cc93',
+      success:   '#b3e4a5',
+      error:     '#ef8aa6',
+      text:      '#e8e4f0',
+      textMuted: '#7a7494',
+      bg:        '#191623',
+      surface:   '#221e30',
+      border:    '#362f4a',
+      barDefault:'#3d3656',
+      wall:      '#1a1726',
+      closed:    '#2a2540',
+    };
+
+    const COLS = 20;
+    const ROWS = 12;
+    let grid = []; // 0 = open, 1 = wall
+    let cellStates = []; // 'empty', 'wall', 'start', 'goal', 'open', 'closed', 'current', 'path'
+    let start = { r: 1, c: 1 };
+    let goal = { r: ROWS - 2, c: COLS - 2 };
+    let statusText = 'ready';
+    let gScores = [];
+    let fScores = [];
+    let hScores = [];
+
+    function initGrid() {
+      grid = [];
+      cellStates = [];
+      gScores = [];
+      fScores = [];
+      hScores = [];
+      for (let r = 0; r < ROWS; r++) {
+        grid[r] = [];
+        cellStates[r] = [];
+        gScores[r] = [];
+        fScores[r] = [];
+        hScores[r] = [];
+        for (let c = 0; c < COLS; c++) {
+          // ~25% walls, but not on start/goal
+          const isWall = (r === start.r && c === start.c) || (r === goal.r && c === goal.c)
+            ? false
+            : Math.random() < 0.25;
+          grid[r][c] = isWall ? 1 : 0;
+          cellStates[r][c] = isWall ? 'wall' : 'empty';
+          gScores[r][c] = Infinity;
+          fScores[r][c] = Infinity;
+          hScores[r][c] = 0;
+        }
+      }
+      cellStates[start.r][start.c] = 'start';
+      cellStates[goal.r][goal.c] = 'goal';
+
+      // Ensure start and goal are not walled off — clear a path corridor
+      grid[start.r][start.c] = 0;
+      grid[goal.r][goal.c] = 0;
+      // Clear cells around start and goal
+      for (const [dr, dc] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+        const sr = start.r + dr, sc = start.c + dc;
+        if (sr >= 0 && sr < ROWS && sc >= 0 && sc < COLS) {
+          grid[sr][sc] = 0;
+          if (cellStates[sr][sc] === 'wall') cellStates[sr][sc] = 'empty';
+        }
+        const gr = goal.r + dr, gc = goal.c + dc;
+        if (gr >= 0 && gr < ROWS && gc >= 0 && gc < COLS) {
+          grid[gr][gc] = 0;
+          if (cellStates[gr][gc] === 'wall') cellStates[gr][gc] = 'empty';
+        }
+      }
+    }
+
+    function resetState() {
+      stepQueue = [];
+      running = false;
+      statusText = 'ready';
+      updatePlayBtn();
+    }
+
+    function resize() {
+      const container = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = container.clientWidth * dpr;
+      canvas.height = 500 * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = container.clientWidth + 'px';
+      canvas.style.height = '500px';
+    }
+
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = 500;
+      ctx.clearRect(0, 0, w, h);
+
+      const padding = 30;
+      const availW = w - padding * 2;
+      const availH = h - padding * 2 - 30;
+      const cellSize = Math.min(availW / COLS, availH / ROWS);
+      const gridW = cellSize * COLS;
+      const gridH = cellSize * ROWS;
+      const offsetX = (w - gridW) / 2;
+      const offsetY = padding + 20;
+
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const x = offsetX + c * cellSize;
+          const y = offsetY + r * cellSize;
+          const state = cellStates[r][c];
+
+          let fillColor = C.surface;
+          let glow = false;
+
+          if (state === 'wall') {
+            fillColor = C.wall;
+          } else if (state === 'start') {
+            fillColor = C.success;
+            glow = true;
+          } else if (state === 'goal') {
+            fillColor = C.accent;
+            glow = true;
+          } else if (state === 'current') {
+            fillColor = C.accent;
+            glow = true;
+          } else if (state === 'open') {
+            fillColor = C.primary;
+          } else if (state === 'closed') {
+            fillColor = C.closed;
+          } else if (state === 'path') {
+            fillColor = C.success;
+            glow = true;
+          }
+
+          if (glow) {
+            ctx.shadowColor = fillColor;
+            ctx.shadowBlur = 12;
+          }
+
+          const gap = 1.5;
+          const radius = 3;
+          const cx = x + gap;
+          const cy = y + gap;
+          const cw = cellSize - gap * 2;
+          const ch = cellSize - gap * 2;
+
+          ctx.beginPath();
+          ctx.moveTo(cx + radius, cy);
+          ctx.lineTo(cx + cw - radius, cy);
+          ctx.quadraticCurveTo(cx + cw, cy, cx + cw, cy + radius);
+          ctx.lineTo(cx + cw, cy + ch - radius);
+          ctx.quadraticCurveTo(cx + cw, cy + ch, cx + cw - radius, cy + ch);
+          ctx.lineTo(cx + radius, cy + ch);
+          ctx.quadraticCurveTo(cx, cy + ch, cx, cy + ch - radius);
+          ctx.lineTo(cx, cy + radius);
+          ctx.quadraticCurveTo(cx, cy, cx + radius, cy);
+          ctx.closePath();
+
+          ctx.fillStyle = fillColor;
+          ctx.fill();
+
+          ctx.shadowColor = 'transparent';
+          ctx.shadowBlur = 0;
+
+          // Show f/g/h scores if cell is large enough and has been evaluated
+          if (cellSize >= 32 && gScores[r][c] < Infinity && state !== 'wall' && state !== 'start' && state !== 'goal') {
+            ctx.fillStyle = C.textMuted;
+            ctx.font = (Math.min(9, cellSize * 0.22)) + 'px JetBrains Mono, monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const g = gScores[r][c];
+            const f = fScores[r][c];
+            if (cellSize >= 40) {
+              ctx.fillText('f=' + f, x + cellSize / 2, y + cellSize * 0.35);
+              ctx.fillText('g=' + g, x + cellSize / 2, y + cellSize * 0.65);
+            } else {
+              ctx.fillText('' + f, x + cellSize / 2, y + cellSize / 2);
+            }
+          }
+
+          // Start/Goal labels
+          if (state === 'start' || (r === start.r && c === start.c)) {
+            ctx.fillStyle = C.bg;
+            ctx.font = 'bold ' + Math.min(12, cellSize * 0.4) + 'px JetBrains Mono, monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('S', x + cellSize / 2, y + cellSize / 2);
+          } else if (state === 'goal' || (r === goal.r && c === goal.c)) {
+            ctx.fillStyle = C.bg;
+            ctx.font = 'bold ' + Math.min(12, cellSize * 0.4) + 'px JetBrains Mono, monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('G', x + cellSize / 2, y + cellSize / 2);
+          }
+        }
+      }
+
+      // Status
+      ctx.fillStyle = C.textMuted;
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(COLS + 'x' + ROWS + ' grid  |  ' + statusText, 20, 18);
+    }
+
+    // ── A* step generation ──
+    function manhattan(r1, c1, r2, c2) {
+      return Math.abs(r1 - r2) + Math.abs(c1 - c2);
+    }
+
+    function generateSteps() {
+      const steps = [];
+      const gScore = Array.from({ length: ROWS }, () => Array(COLS).fill(Infinity));
+      const fScore = Array.from({ length: ROWS }, () => Array(COLS).fill(Infinity));
+      const cameFrom = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+      const openSet = new Set();
+      const closedSet = new Set();
+
+      const key = (r, c) => r * COLS + c;
+
+      gScore[start.r][start.c] = 0;
+      const h0 = manhattan(start.r, start.c, goal.r, goal.c);
+      fScore[start.r][start.c] = h0;
+      openSet.add(key(start.r, start.c));
+
+      steps.push({ type: 'open', r: start.r, c: start.c, g: 0, f: h0, h: h0 });
+
+      while (openSet.size > 0) {
+        // Find node in open set with lowest f
+        let bestKey = -1;
+        let bestF = Infinity;
+        for (const k of openSet) {
+          const r = Math.floor(k / COLS);
+          const c = k % COLS;
+          if (fScore[r][c] < bestF) {
+            bestF = fScore[r][c];
+            bestKey = k;
+          }
+        }
+
+        const cr = Math.floor(bestKey / COLS);
+        const cc = bestKey % COLS;
+
+        steps.push({ type: 'current', r: cr, c: cc });
+
+        if (cr === goal.r && cc === goal.c) {
+          // Reconstruct path
+          const path = [];
+          let pr = cr, pc = cc;
+          while (cameFrom[pr][pc] !== null) {
+            path.push({ r: pr, c: pc });
+            const prev = cameFrom[pr][pc];
+            pr = prev.r;
+            pc = prev.c;
+          }
+          path.push({ r: start.r, c: start.c });
+          path.reverse();
+          steps.push({ type: 'path', cells: path });
+          return steps;
+        }
+
+        openSet.delete(bestKey);
+        closedSet.add(bestKey);
+        steps.push({ type: 'close', r: cr, c: cc });
+
+        // Neighbors (4-directional)
+        const dirs = [[0,1],[0,-1],[1,0],[-1,0]];
+        for (const [dr, dc] of dirs) {
+          const nr = cr + dr;
+          const nc = cc + dc;
+          if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+          if (grid[nr][nc] === 1) continue;
+          const nk = key(nr, nc);
+          if (closedSet.has(nk)) continue;
+
+          const tentG = gScore[cr][cc] + 1;
+          if (tentG < gScore[nr][nc]) {
+            cameFrom[nr][nc] = { r: cr, c: cc };
+            gScore[nr][nc] = tentG;
+            const h = manhattan(nr, nc, goal.r, goal.c);
+            fScore[nr][nc] = tentG + h;
+
+            if (!openSet.has(nk)) {
+              openSet.add(nk);
+            }
+            steps.push({ type: 'open', r: nr, c: nc, g: tentG, f: tentG + h, h: h });
+          }
+        }
+      }
+
+      // No path found
+      steps.push({ type: 'no-path' });
+      return steps;
+    }
+
+    function executeStep(step) {
+      return new Promise(resolve => {
+        if (step.type === 'open') {
+          if (!(step.r === start.r && step.c === start.c) && !(step.r === goal.r && step.c === goal.c)) {
+            cellStates[step.r][step.c] = 'open';
+          }
+          gScores[step.r][step.c] = step.g;
+          fScores[step.r][step.c] = step.f;
+          hScores[step.r][step.c] = step.h;
+          draw();
+          setTimeout(resolve, getDelay() * 0.3);
+        } else if (step.type === 'current') {
+          if (!(step.r === start.r && step.c === start.c) && !(step.r === goal.r && step.c === goal.c)) {
+            cellStates[step.r][step.c] = 'current';
+          }
+          statusText = 'exploring (' + step.r + ',' + step.c + ')';
+          draw();
+          setTimeout(resolve, getDelay());
+        } else if (step.type === 'close') {
+          if (!(step.r === start.r && step.c === start.c) && !(step.r === goal.r && step.c === goal.c)) {
+            cellStates[step.r][step.c] = 'closed';
+          }
+          draw();
+          setTimeout(resolve, getDelay() * 0.2);
+        } else if (step.type === 'path') {
+          // Animate path reconstruction
+          let idx = 0;
+          function showNext() {
+            if (idx >= step.cells.length) {
+              statusText = 'path found! length=' + step.cells.length + ' \u2713';
+              draw();
+              resolve();
+              return;
+            }
+            const cell = step.cells[idx];
+            cellStates[cell.r][cell.c] = 'path';
+            draw();
+            idx++;
+            setTimeout(showNext, getDelay() * 0.4);
+          }
+          statusText = 'reconstructing path...';
+          showNext();
+        } else if (step.type === 'no-path') {
+          statusText = 'no path found \u2717';
+          draw();
+          resolve();
+        }
+      });
+    }
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function getDelay() {
+      return Math.max(10, 500 - (speed / 100) * 490);
+    }
+
+    async function play() {
+      if (running) {
+        running = false;
+        updatePlayBtn();
+        return;
+      }
+
+      if (stepQueue.length === 0) {
+        initGrid();
+        resetState();
+        stepQueue = generateSteps();
+        draw();
+      }
+
+      running = true;
+      updatePlayBtn();
+
+      while (stepQueue.length > 0 && running) {
+        const step = stepQueue.shift();
+        await executeStep(step);
+      }
+
+      if (stepQueue.length === 0) {
+        running = false;
+      }
+      updatePlayBtn();
+    }
+
+    async function step() {
+      if (running) return;
+      if (stepQueue.length === 0) {
+        initGrid();
+        resetState();
+        stepQueue = generateSteps();
+        draw();
+      }
+      if (stepQueue.length > 0) {
+        const s = stepQueue.shift();
+        await executeStep(s);
+      }
+    }
+
+    function updatePlayBtn() {
+      const btn = document.getElementById('btnPlay');
+      btn.textContent = running ? '\u275A\u275A Pause' : '\u25B6 Start Search';
+    }
+
+    document.getElementById('btnPlay').addEventListener('click', play);
+    document.getElementById('btnStep').addEventListener('click', step);
+    document.getElementById('btnReset').addEventListener('click', () => {
+      initGrid();
+      resetState();
+      draw();
+    });
+
+    document.getElementById('speedSlider').addEventListener('input', (e) => {
+      speed = parseInt(e.target.value);
+    });
+
+    window.addEventListener('resize', () => {
+      resize();
+      draw();
+    });
+
+    // ── Init ──
+    resize();
+    initGrid();
+    resetState();
+    draw();
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dijkstra's Algorithm — CS Animations</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../../index.html" class="nav__logo">
+      <span>&gt;</span> cs_animations
+    </a>
+    <ul class="nav__links">
+      <li><a href="../../index.html#categories">Browse</a></li>
+    </ul>
+  </nav>
+
+  <div class="animation-page">
+    <div class="animation-page__header">
+      <div class="animation-page__breadcrumb">
+        <a href="../../index.html">home</a>
+        <span class="sep">/</span>
+        <a href="index.html">graph-algorithms</a>
+        <span class="sep">/</span>
+        <span>dijkstra</span>
+      </div>
+      <h1 class="animation-page__title">Dijkstra's Algorithm</h1>
+      <p class="animation-page__subtitle">
+        Find the shortest path from a source node to all other nodes in a weighted graph with non-negative edge weights.
+      </p>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="controls__btn controls__btn--primary" id="btnPlay">&#9654; Start</button>
+      <button class="controls__btn" id="btnStep">Step</button>
+      <button class="controls__btn" id="btnReset">Reset</button>
+      <div class="controls__separator"></div>
+      <span class="controls__label">Speed</span>
+      <input type="range" class="controls__slider" id="speedSlider" min="1" max="100" value="50">
+    </div>
+
+    <div class="info-panel">
+      <div class="info-block">
+        <h4 class="info-block__title">Complexity</h4>
+        <div class="info-block__content">
+          <p>Time: <code>O(V&sup2;)</code> naive implementation</p>
+          <p>Time: <code>O(E log V)</code> with priority queue</p>
+          <p>Space: <code>O(V)</code></p>
+          <p style="margin-top:0.75rem; color: var(--text-muted);">Only works with non-negative edge weights.</p>
+        </div>
+      </div>
+      <div class="info-block">
+        <h4 class="info-block__title">How It Works</h4>
+        <div class="info-block__content">
+          <div class="step"><span class="step-num">01</span> Set distance to source = 0, all others = &infin;</div>
+          <div class="step"><span class="step-num">02</span> Pick unvisited node with smallest distance</div>
+          <div class="step"><span class="step-num">03</span> For each neighbor, check if path through current is shorter</div>
+          <div class="step"><span class="step-num">04</span> Update distance if shorter path found (relaxation)</div>
+          <div class="step"><span class="step-num">05</span> Mark current node as finalized; repeat until all visited</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    cs_animations — built for learning
+  </footer>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let running = false;
+    let speed = 50;
+    let stepQueue = [];
+    let nodes = [];
+    let edges = [];
+    let adjList = {};
+    let nodeStates = {};   // 'unvisited' | 'current' | 'finalized'
+    let edgeStates = {};   // key: 'from-to' => 'default' | 'relaxed' | 'finalized'
+    let distLabels = {};
+    const NUM_NODES = 8;
+
+    const COLORS = {
+      primary:   '#cbb2ed',
+      secondary: '#a8d8df',
+      accent:    '#f7cc93',
+      success:   '#b3e4a5',
+      error:     '#ef8aa6',
+      text:      '#e8e4f0',
+      textMuted: '#7a7494',
+      bg:        '#191623',
+      surface:   '#221e30',
+      border:    '#362f4a',
+      node:      '#3d3656',
+      edge:      '#362f4a',
+    };
+
+    function resize() {
+      const container = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = container.clientWidth * dpr;
+      canvas.height = 500 * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = container.clientWidth + 'px';
+      canvas.style.height = '500px';
+    }
+
+    function generateGraph() {
+      nodes = [];
+      edges = [];
+      adjList = {};
+      nodeStates = {};
+      edgeStates = {};
+      distLabels = {};
+
+      const w = canvas.clientWidth;
+      const h = 500;
+      const padding = 60;
+      const cx = w / 2;
+      const cy = h / 2;
+
+      // Place nodes in a spread pattern
+      const positions = [
+        [padding + 40, cy - 60],
+        [padding + 160, padding + 40],
+        [cx - 20, padding + 30],
+        [cx + 120, padding + 60],
+        [w - padding - 40, cy - 40],
+        [w - padding - 140, cy + 100],
+        [cx - 40, h - padding - 40],
+        [padding + 120, cy + 100],
+      ];
+
+      for (let i = 0; i < NUM_NODES; i++) {
+        const [px, py] = positions[i] || [padding + Math.random() * (w - 2 * padding), padding + Math.random() * (h - 2 * padding)];
+        nodes.push({ id: i, x: px, y: py });
+        adjList[i] = [];
+        nodeStates[i] = 'unvisited';
+        distLabels[i] = i === 0 ? '0' : '\u221e';
+      }
+
+      // Create edges to ensure connectivity (spanning tree) then add extras
+      const connected = [0];
+      const unconnected = [];
+      for (let i = 1; i < NUM_NODES; i++) unconnected.push(i);
+
+      while (unconnected.length > 0) {
+        const fromIdx = Math.floor(Math.random() * connected.length);
+        const toIdx = Math.floor(Math.random() * unconnected.length);
+        const from = connected[fromIdx];
+        const to = unconnected[toIdx];
+        const weight = Math.floor(Math.random() * 9) + 1;
+        addEdge(from, to, weight);
+        connected.push(to);
+        unconnected.splice(toIdx, 1);
+      }
+
+      // Add extra edges
+      const extraCount = 4 + Math.floor(Math.random() * 3);
+      for (let e = 0; e < extraCount; e++) {
+        const a = Math.floor(Math.random() * NUM_NODES);
+        let b = Math.floor(Math.random() * NUM_NODES);
+        if (a === b) b = (b + 1) % NUM_NODES;
+        if (!hasEdge(a, b)) {
+          const weight = Math.floor(Math.random() * 9) + 1;
+          addEdge(a, b, weight);
+        }
+      }
+
+      stepQueue = [];
+      running = false;
+      updatePlayBtn();
+      draw();
+    }
+
+    function addEdge(a, b, w) {
+      edges.push({ from: a, to: b, weight: w });
+      adjList[a].push({ node: b, weight: w });
+      adjList[b].push({ node: a, weight: w });
+      edgeStates[a + '-' + b] = 'default';
+      edgeStates[b + '-' + a] = 'default';
+    }
+
+    function hasEdge(a, b) {
+      return edges.some(e => (e.from === a && e.to === b) || (e.from === b && e.to === a));
+    }
+
+    function edgeKey(a, b) {
+      return edges.find(e => (e.from === a && e.to === b) || (e.from === b && e.to === a))
+        ? (a < b ? a + '-' + b : b + '-' + a)
+        : null;
+    }
+
+    function setEdgeState(a, b, state) {
+      const k1 = a + '-' + b;
+      const k2 = b + '-' + a;
+      if (k1 in edgeStates) edgeStates[k1] = state;
+      if (k2 in edgeStates) edgeStates[k2] = state;
+    }
+
+    function getEdgeState(a, b) {
+      const k1 = a + '-' + b;
+      const k2 = b + '-' + a;
+      return edgeStates[k1] || edgeStates[k2] || 'default';
+    }
+
+    // ── Drawing ──
+    function draw() {
+      const w = canvas.clientWidth;
+      const h = 500;
+      ctx.clearRect(0, 0, w, h);
+
+      // Draw edges
+      for (const edge of edges) {
+        const nA = nodes[edge.from];
+        const nB = nodes[edge.to];
+        const state = getEdgeState(edge.from, edge.to);
+
+        let color = COLORS.edge;
+        let lineWidth = 2;
+        if (state === 'relaxed') {
+          color = COLORS.accent;
+          lineWidth = 3;
+        } else if (state === 'finalized') {
+          color = COLORS.success;
+          lineWidth = 3;
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(nA.x, nA.y);
+        ctx.lineTo(nB.x, nB.y);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+
+        // Weight label
+        const mx = (nA.x + nB.x) / 2;
+        const my = (nA.y + nB.y) / 2;
+        ctx.fillStyle = COLORS.bg;
+        ctx.beginPath();
+        ctx.arc(mx, my, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = state === 'relaxed' ? COLORS.accent : state === 'finalized' ? COLORS.success : COLORS.textMuted;
+        ctx.font = '11px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(edge.weight, mx, my);
+      }
+
+      // Draw nodes
+      const nodeRadius = 22;
+      for (const node of nodes) {
+        const state = nodeStates[node.id];
+        let fillColor = COLORS.node;
+        let strokeColor = COLORS.border;
+        let glow = false;
+
+        if (state === 'current') {
+          fillColor = COLORS.primary;
+          strokeColor = COLORS.primary;
+          glow = true;
+        } else if (state === 'finalized') {
+          fillColor = COLORS.success;
+          strokeColor = COLORS.success;
+          glow = true;
+        }
+
+        if (glow) {
+          ctx.shadowColor = fillColor;
+          ctx.shadowBlur = 18;
+        }
+
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, nodeRadius, 0, Math.PI * 2);
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
+        // Node label
+        ctx.fillStyle = state === 'current' || state === 'finalized' ? COLORS.bg : COLORS.text;
+        ctx.font = 'bold 13px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(node.id, node.x, node.y);
+
+        // Distance label below
+        const dist = distLabels[node.id];
+        ctx.fillStyle = state === 'finalized' ? COLORS.success : COLORS.textMuted;
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.fillText('d=' + dist, node.x, node.y + nodeRadius + 14);
+      }
+
+      // Status
+      ctx.fillStyle = COLORS.textMuted;
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      let status = 'ready';
+      if (running) status = 'running...';
+      const allFinalized = Object.values(nodeStates).every(s => s === 'finalized');
+      if (allFinalized && stepQueue.length === 0) status = 'complete \u2713';
+      ctx.fillText('dijkstra | ' + status, 20, 16);
+    }
+
+    // ── Algorithm ──
+    function generateSteps() {
+      const steps = [];
+      const dist = new Array(NUM_NODES).fill(Infinity);
+      const finalized = new Array(NUM_NODES).fill(false);
+      dist[0] = 0;
+
+      steps.push({ type: 'visit', node: 0, dist: 0 });
+
+      for (let iter = 0; iter < NUM_NODES; iter++) {
+        // Pick unfinalized node with smallest dist
+        let u = -1;
+        let minD = Infinity;
+        for (let i = 0; i < NUM_NODES; i++) {
+          if (!finalized[i] && dist[i] < minD) {
+            minD = dist[i];
+            u = i;
+          }
+        }
+        if (u === -1) break;
+
+        steps.push({ type: 'visit', node: u, dist: dist[u] });
+
+        // Relax neighbors
+        for (const neighbor of adjList[u]) {
+          const v = neighbor.node;
+          const w = neighbor.weight;
+          if (!finalized[v]) {
+            const newDist = dist[u] + w;
+            steps.push({ type: 'relax', from: u, to: v, newDist: newDist, oldDist: dist[v] });
+            if (newDist < dist[v]) {
+              dist[v] = newDist;
+              steps.push({ type: 'update-dist', node: v, dist: newDist });
+            }
+          }
+        }
+
+        finalized[u] = true;
+        steps.push({ type: 'finalize', node: u, dist: dist[u] });
+      }
+
+      return steps;
+    }
+
+    function executeStep(step) {
+      return new Promise(resolve => {
+        if (step.type === 'visit') {
+          nodeStates[step.node] = 'current';
+          distLabels[step.node] = step.dist === Infinity ? '\u221e' : String(step.dist);
+          draw();
+          setTimeout(resolve, getDelay());
+        } else if (step.type === 'relax') {
+          setEdgeState(step.from, step.to, 'relaxed');
+          draw();
+          setTimeout(() => {
+            if (step.newDist >= step.oldDist) {
+              setEdgeState(step.from, step.to, 'default');
+              draw();
+            }
+            resolve();
+          }, getDelay());
+        } else if (step.type === 'update-dist') {
+          distLabels[step.node] = String(step.dist);
+          draw();
+          setTimeout(resolve, getDelay() * 0.5);
+        } else if (step.type === 'finalize') {
+          nodeStates[step.node] = 'finalized';
+          // Finalize edges that are part of shortest path tree
+          for (const neighbor of adjList[step.node]) {
+            if (nodeStates[neighbor.node] === 'finalized') {
+              setEdgeState(step.node, neighbor.node, 'finalized');
+            }
+          }
+          draw();
+          setTimeout(resolve, getDelay() * 0.5);
+        }
+      });
+    }
+
+    function getDelay() {
+      return Math.max(10, 500 - (speed / 100) * 490);
+    }
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    async function play() {
+      if (running) {
+        running = false;
+        updatePlayBtn();
+        return;
+      }
+
+      if (stepQueue.length === 0) {
+        resetStates();
+        stepQueue = generateSteps();
+      }
+
+      running = true;
+      updatePlayBtn();
+
+      while (stepQueue.length > 0 && running) {
+        const step = stepQueue.shift();
+        await executeStep(step);
+      }
+
+      if (stepQueue.length === 0) {
+        running = false;
+        draw();
+      }
+      updatePlayBtn();
+    }
+
+    async function step() {
+      if (running) return;
+      if (stepQueue.length === 0) {
+        resetStates();
+        stepQueue = generateSteps();
+      }
+      if (stepQueue.length > 0) {
+        const s = stepQueue.shift();
+        await executeStep(s);
+        if (stepQueue.length === 0) draw();
+      }
+    }
+
+    function resetStates() {
+      for (let i = 0; i < NUM_NODES; i++) {
+        nodeStates[i] = 'unvisited';
+        distLabels[i] = i === 0 ? '0' : '\u221e';
+      }
+      for (const key in edgeStates) {
+        edgeStates[key] = 'default';
+      }
+    }
+
+    function updatePlayBtn() {
+      const btn = document.getElementById('btnPlay');
+      btn.textContent = running ? '\u275A\u275A Pause' : '\u25B6 Start';
+    }
+
+    document.getElementById('btnPlay').addEventListener('click', play);
+    document.getElementById('btnStep').addEventListener('click', step);
+    document.getElementById('btnReset').addEventListener('click', () => {
+      running = false;
+      generateGraph();
+    });
+    document.getElementById('speedSlider').addEventListener('input', (e) => {
+      speed = parseInt(e.target.value);
+    });
+
+    window.addEventListener('resize', () => {
+      resize();
+      draw();
+    });
+
+    resize();
+    generateGraph();
+  })();
+  </script>
+</body>
+</html>
