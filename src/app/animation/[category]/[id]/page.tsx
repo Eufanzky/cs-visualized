@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import type { Metadata } from 'next';
 import { CATEGORIES, getAnimationById } from '@/lib/categories';
 import { AnimationViewClient } from '@/components/AnimationViewClient';
+import AnimatedBreadcrumb from '@/components/AnimatedBreadcrumb';
 
 /* ── Static params (SSG — only 'ready' animations get real routes) ─── */
 
@@ -86,39 +86,14 @@ export default async function AnimationPage({
     >
       {/* ── Header ──────────────────────────────────────────────── */}
       <header style={{ marginBottom: '2rem' }}>
-        {/* Breadcrumb */}
-        <nav
-          aria-label="Breadcrumb"
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.72rem',
-            color: 'var(--text-muted)',
-            marginBottom: '1rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
-          <Link
-            href="/"
-            style={{ color: 'var(--text-muted)', transition: 'color 0.25s' }}
-            className="breadcrumb-link"
-          >
-            home
-          </Link>
-          <span style={{ opacity: 0.4 }}>/</span>
-          <Link
-            href={`/category/${category.id}`}
-            style={{ color: 'var(--text-muted)', transition: 'color 0.25s' }}
-            className="breadcrumb-link"
-          >
-            {category.title}
-          </Link>
-          <span style={{ opacity: 0.4 }}>/</span>
-          <span style={{ color: 'var(--text-secondary)' }}>
-            {animation.title}
-          </span>
-        </nav>
+        {/* Animated breadcrumb */}
+        <AnimatedBreadcrumb
+          segments={[
+            { label: 'home', href: '/' },
+            { label: category.title, href: `/category/${category.id}` },
+            { label: animation.title },
+          ]}
+        />
 
         {/* Title row */}
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1rem', flexWrap: 'wrap' }}>

@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { CATEGORIES, getCategoryById } from '@/lib/categories';
+import AnimatedBreadcrumb from '@/components/AnimatedBreadcrumb';
+import AnimCardReveal from '@/components/AnimCardReveal';
 
 /* ── Static params (SSG) ───────────────────────────────────────────── */
 
@@ -49,31 +51,13 @@ export default async function CategoryPage({
           margin: '0 auto',
         }}
       >
-        {/* Breadcrumb */}
-        <nav
-          aria-label="Breadcrumb"
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.72rem',
-            color: 'var(--text-muted)',
-            marginBottom: '1.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
-          <Link
-            href="/"
-            className="breadcrumb-link"
-            style={{ color: 'var(--text-muted)', transition: 'color 0.25s' }}
-          >
-            home
-          </Link>
-          <span style={{ opacity: 0.4 }}>/</span>
-          <span style={{ color: 'var(--text-secondary)' }}>
-            {category.title}
-          </span>
-        </nav>
+        {/* Animated breadcrumb */}
+        <AnimatedBreadcrumb
+          segments={[
+            { label: 'home', href: '/' },
+            { label: category.title },
+          ]}
+        />
 
         {/* Icon + Title */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
@@ -97,13 +81,8 @@ export default async function CategoryPage({
             {category.icon}
           </div>
           <h1
-            style={{
-              fontFamily: 'var(--font-serif)',
-              fontSize: 'clamp(2rem, 5vw, 3.5rem)',
-              fontWeight: 400,
-              lineHeight: 1.1,
-              color: 'var(--text-primary)',
-            }}
+            className="category-page-title"
+            style={{ color: 'var(--text-primary)' }}
           >
             {category.title}
           </h1>
@@ -178,15 +157,8 @@ export default async function CategoryPage({
         </div>
       </section>
 
-      {/* Divider */}
-      <div
-        style={{
-          height: '1px',
-          background: 'var(--border-subtle)',
-          maxWidth: 'var(--max-width)',
-          margin: '0 auto',
-        }}
-      />
+      {/* Gradient divider */}
+      <div className="section-divider" aria-hidden />
 
       {/* ── Animations Grid ───────────────────────────────────────── */}
       <section
@@ -219,15 +191,16 @@ export default async function CategoryPage({
                 marginBottom: '3rem',
               }}
             >
-              {readyAnims.map((anim) => (
-                <AnimCard
-                  key={anim.id}
-                  href={`/animation/${category.id}/${anim.id}`}
-                  title={anim.title}
-                  complexity={anim.complexity}
-                  status="ready"
-                  accentHex={category.accentHex}
-                />
+              {readyAnims.map((anim, i) => (
+                <AnimCardReveal key={anim.id} index={i}>
+                  <AnimCard
+                    href={`/animation/${category.id}/${anim.id}`}
+                    title={anim.title}
+                    complexity={anim.complexity}
+                    status="ready"
+                    accentHex={category.accentHex}
+                  />
+                </AnimCardReveal>
               ))}
             </div>
           </>
@@ -255,15 +228,16 @@ export default async function CategoryPage({
                 gap: '1.25rem',
               }}
             >
-              {comingAnims.map((anim) => (
-                <AnimCard
-                  key={anim.id}
-                  href="#"
-                  title={anim.title}
-                  complexity={anim.complexity}
-                  status="coming"
-                  accentHex={category.accentHex}
-                />
+              {comingAnims.map((anim, i) => (
+                <AnimCardReveal key={anim.id} index={i}>
+                  <AnimCard
+                    href="#"
+                    title={anim.title}
+                    complexity={anim.complexity}
+                    status="coming"
+                    accentHex={category.accentHex}
+                  />
+                </AnimCardReveal>
               ))}
             </div>
           </>
@@ -305,7 +279,7 @@ function AnimCard({ href, title, complexity, status, accentHex }: AnimCardProps)
          For a server component sub-function we rely on CSS — add a className
          or use a CSS-in-JS trick. Since this file is a server component we keep
          the styling static; interactive hover is layered via globals.css below. */
-      className={isReady ? 'anim-card-ready' : ''}
+      className={isReady ? 'anim-card-ready' : 'anim-card-coming'}
     >
       {/* Status badge */}
       <div
@@ -313,23 +287,28 @@ function AnimCard({ href, title, complexity, status, accentHex }: AnimCardProps)
           fontFamily: 'var(--font-mono)',
           fontSize: '0.62rem',
           textTransform: 'uppercase',
-          letterSpacing: '0.1em',
+          letterSpacing: '0.12em',
           color: isReady ? 'var(--syn-success)' : 'var(--text-muted)',
           marginBottom: '0.75rem',
           display: 'flex',
           alignItems: 'center',
-          gap: '0.4rem',
+          gap: '0.45rem',
         }}
       >
-        <span
-          style={{
-            display: 'inline-block',
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            background: isReady ? 'var(--syn-success)' : 'var(--text-muted)',
-          }}
-        />
+        {/* Ready: solid dot; Coming: pulsing dot */}
+        {isReady ? (
+          <span
+            style={{
+              display: 'inline-block',
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: 'var(--syn-success)',
+            }}
+          />
+        ) : (
+          <span className="coming-dot" />
+        )}
         {isReady ? 'ready' : 'coming soon'}
       </div>
 
@@ -340,6 +319,7 @@ function AnimCard({ href, title, complexity, status, accentHex }: AnimCardProps)
           fontWeight: 500,
           color: 'var(--text-primary)',
           marginBottom: '0.5rem',
+          letterSpacing: '-0.01em',
         }}
       >
         {title}
@@ -351,6 +331,7 @@ function AnimCard({ href, title, complexity, status, accentHex }: AnimCardProps)
           fontFamily: 'var(--font-mono)',
           fontSize: '0.72rem',
           color: accentHex,
+          letterSpacing: '0.03em',
         }}
       >
         {complexity}

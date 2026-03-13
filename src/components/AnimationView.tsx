@@ -37,9 +37,19 @@ export function AnimationView({ algorithmId, initialSize = 24 }: AnimationViewPr
     initialSize
   );
 
+  const canvasStatus = state.isDone
+    ? 'complete'
+    : state.isPlaying
+    ? 'running'
+    : 'ready';
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <AnimationCanvas canvasRef={canvasRef} height={480} />
+    <section aria-label="Interactive algorithm visualisation" className="flex flex-col gap-3">
+      <AnimationCanvas
+        canvasRef={canvasRef}
+        height={480}
+        status={canvasStatus}
+      />
       <AnimationControls
         state={state}
         onPlay={play}
@@ -51,6 +61,6 @@ export function AnimationView({ algorithmId, initialSize = 24 }: AnimationViewPr
         minSize={5}
         maxSize={100}
       />
-    </div>
+    </section>
   );
 }

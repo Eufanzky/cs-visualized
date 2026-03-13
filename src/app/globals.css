@@ -134,36 +134,64 @@ a {
   text-decoration: none;
 }
 
-/* ── Range slider ── */
+/* ── Range slider (base track) ── */
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
   height: 4px;
-  background: var(--border);
-  border-radius: 2px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 9999px;
   outline: none;
   cursor: pointer;
+  /* The filled portion is painted by an absolutely-positioned div in Slider */
 }
 
+/* ── Slider thumb — webkit ── */
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: var(--syn-keyword);
   cursor: pointer;
   border: 2px solid var(--bg-deep);
+  box-shadow: 0 0 0 3px rgba(196,167,231,0.15), 0 2px 6px rgba(0,0,0,0.5);
+  transition: box-shadow 0.15s, transform 0.15s;
 }
 
+input[type='range']:hover::-webkit-slider-thumb {
+  box-shadow: 0 0 0 5px rgba(196,167,231,0.22), 0 2px 8px rgba(0,0,0,0.6);
+  transform: scale(1.12);
+}
+
+input[type='range']:active::-webkit-slider-thumb {
+  transform: scale(0.95);
+  box-shadow: 0 0 0 6px rgba(196,167,231,0.28), 0 2px 4px rgba(0,0,0,0.6);
+}
+
+/* ── Slider thumb — Firefox ── */
 input[type='range']::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: var(--syn-keyword);
   cursor: pointer;
   border: 2px solid var(--bg-deep);
+  box-shadow: 0 0 0 3px rgba(196,167,231,0.15), 0 2px 6px rgba(0,0,0,0.5);
   box-sizing: border-box;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+
+input[type='range']:hover::-moz-range-thumb {
+  box-shadow: 0 0 0 5px rgba(196,167,231,0.22), 0 2px 8px rgba(0,0,0,0.6);
+  transform: scale(1.12);
+}
+
+/* Firefox — hide default track fill so our overlay div shows */
+input[type='range']::-moz-range-track {
+  background: transparent;
+  height: 4px;
 }
 
 /* ── Keyframe animations ── */
@@ -177,7 +205,79 @@ input[type='range']::-moz-range-thumb {
   to   { opacity: 1; }
 }
 
-/* Staggered hero entrance helpers */
+@keyframes playGlow {
+  0%, 100% { box-shadow: 0 0 16px rgba(196,167,231,0.18), 0 0 32px rgba(196,167,231,0.06); }
+  50%       { box-shadow: 0 0 24px rgba(196,167,231,0.32), 0 0 48px rgba(196,167,231,0.12); }
+}
+
+/* ── Hero background orb drift ── */
+@keyframes orbDrift1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(-50px, 40px) scale(1.08); }
+  66%  { transform: translate(35px, -25px) scale(0.95); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes orbDrift2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  40%  { transform: translate(60px, -50px) scale(1.12); }
+  70%  { transform: translate(-40px, 25px) scale(0.9); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes orbDrift3 {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(-30px, -60px) scale(1.05); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+/* ── Gradient text shift ── */
+@keyframes gradientShift {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+/* ── Highlight bar pulse ── */
+@keyframes highlightPulse {
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 0.95; }
+}
+
+/* ── Coming-soon shimmer ── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ── Pulsing availability dot ── */
+@keyframes pulseDot {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50%       { opacity: 1;   transform: scale(1.2);  }
+}
+
+/* ── Card cascade entrance ── */
+@keyframes cardCascade {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* ── Dot-grid fade pulse ── */
+@keyframes gridOpacity {
+  from { opacity: 0.7; }
+  to   { opacity: 1;   }
+}
+
+.animate-play-glow {
+  animation: playGlow 2s ease-in-out infinite;
+}
+
+/* Focus-visible ring offset colour fix for dark backgrounds */
+.focus-visible\:ring-offset-canvas:focus-visible {
+  --tw-ring-offset-color: #0d0d14;
+}
+
+/* ── Staggered hero entrance helpers ── */
 .anim-fade-up {
   opacity: 0;
   animation: fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -192,10 +292,387 @@ input[type='range']::-moz-range-thumb {
 .anim-card-ready:hover {
   border-color: var(--border) !important;
   background: var(--bg-elevated) !important;
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 14px 32px -8px rgba(0,0,0,0.5) !important;
+}
+
+/* ── Coming-soon card shimmer overlay ── */
+.anim-card-coming {
+  position: relative;
+  overflow: hidden;
+}
+
+.anim-card-coming::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.025) 50%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 4s ease-in-out infinite;
+  pointer-events: none;
 }
 
 /* ── Breadcrumb link hover ── */
 .breadcrumb-link:hover {
   color: var(--text-primary) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Hero ambient orbs — CSS-only animated background elements
+   ───────────────────────────────────────────────────────────── */
+
+/* Orb container: sits behind all hero content */
+.hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(72px);
+  z-index: 0;
+}
+
+/* Primary orb — purple/teal, upper-right */
+.hero-orb--primary {
+  width: 640px;
+  height: 640px;
+  top: -8%;
+  right: -6%;
+  background: radial-gradient(
+    circle,
+    rgba(196, 167, 231, 0.10) 0%,
+    rgba(156, 207, 216, 0.07) 50%,
+    transparent 70%
+  );
+  animation: orbDrift1 20s ease-in-out infinite;
+}
+
+/* Secondary orb — gold/coral, center-bottom */
+.hero-orb--secondary {
+  width: 460px;
+  height: 460px;
+  bottom: 4%;
+  left: 28%;
+  background: radial-gradient(
+    circle,
+    rgba(246, 193, 119, 0.08) 0%,
+    rgba(234, 154, 151, 0.05) 50%,
+    transparent 70%
+  );
+  animation: orbDrift2 26s ease-in-out infinite;
+}
+
+/* Tertiary orb — muted, bottom-left */
+.hero-orb--tertiary {
+  width: 300px;
+  height: 300px;
+  bottom: 15%;
+  left: -4%;
+  background: radial-gradient(
+    circle,
+    rgba(156, 207, 216, 0.06) 0%,
+    transparent 70%
+  );
+  animation: orbDrift3 32s ease-in-out infinite;
+}
+
+/* ── Dot-grid hero background (replaces line grid) ── */
+.hero-dot-grid {
+  position: absolute;
+  top: 0;
+  right: -10%;
+  width: 65%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(circle, rgba(110, 106, 134, 0.28) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse at 70% 50%, black 10%, transparent 65%);
+  -webkit-mask-image: radial-gradient(ellipse at 70% 50%, black 10%, transparent 65%);
+  animation: gridOpacity 7s ease-in-out infinite alternate;
+}
+
+/* ── Decorative code snippet — hero right side ── */
+.hero-code-deco {
+  position: absolute;
+  top: 130px;
+  right: 2.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  line-height: 1.9;
+  color: var(--text-muted);
+  opacity: 0.14;
+  text-align: right;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+  white-space: pre;
+  animation: fadeSlideUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Hero title gradient text effect on <em>
+   ───────────────────────────────────────────────────────────── */
+.hero-title-gradient {
+  background: linear-gradient(
+    120deg,
+    var(--syn-keyword)  0%,
+    var(--syn-string)   38%,
+    var(--syn-number)   68%,
+    var(--syn-type)    100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 200% 200%;
+  animation: gradientShift 9s ease-in-out infinite;
+}
+
+/* ── Hero highlight underline: pulse animation ── */
+.hero-highlight-bar {
+  animation: highlightPulse 4.5s ease-in-out infinite;
+}
+
+/* ── Hero stat counters: larger + glowing ── */
+.hero-stat-value {
+  display: block;
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 0.2rem !important;
+  letter-spacing: -0.025em;
+  text-shadow: 0 0 24px currentColor;
+}
+
+/* ── Section gradient divider ── */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent  0%,
+    var(--syn-keyword) 15%,
+    var(--syn-string)  40%,
+    var(--syn-number)  65%,
+    var(--syn-type)    85%,
+    transparent  100%
+  );
+  opacity: 0.2;
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+/* ── Section header title refinements ── */
+.section-title {
+  font-family: var(--font-serif) !important;
+  font-size: 2.5rem !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.02em !important;
+  text-shadow: 0 1px 24px rgba(196, 167, 231, 0.1);
+}
+
+/* Gradient section line (replaces solid) */
+.section-line-gradient {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+  margin-left: 0.5rem;
+  transform-origin: left center;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Category card enhancements
+   ───────────────────────────────────────────────────────────── */
+
+/* Progress bar track */
+.card-progress-track {
+  width: 100%;
+  height: 2px;
+  background: var(--border-subtle);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 1.25rem;
+}
+
+/* Progress bar fill — uses accent color via inline style */
+.card-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  opacity: 0.75;
+  transition: width 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Card gradient background tint — applied as a class */
+.card-gradient-bg {
+  background: linear-gradient(
+    135deg,
+    var(--bg-surface)  0%,
+    color-mix(in srgb, var(--card-accent, #c4a7e7) 5%, var(--bg-surface)) 100%
+  ) !important;
+  transition: background 0.4s !important;
+}
+
+/* ── Category page: coming-soon cards ── */
+.anim-card-coming:hover {
+  /* Prevent lift on coming-soon cards */
+  transform: none !important;
+  cursor: default !important;
+}
+
+/* Pulsing readiness dot on coming-soon */
+.coming-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: pulseDot 2s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+/* ── Typography refinements ── */
+.category-page-title {
+  font-family: var(--font-serif) !important;
+  font-size: clamp(2.25rem, 5vw, 4rem) !important;
+  letter-spacing: -0.025em !important;
+  line-height: 1.08 !important;
+  text-shadow: 0 2px 32px rgba(196, 167, 231, 0.1);
+}
+
+/* Footer gradient border */
+.footer-border {
+  position: relative;
+}
+
+.footer-border::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--border) 25%,
+    var(--border) 75%,
+    transparent 100%
+  );
+}
+
+/* ── Skip to content ── */
+.skip-to-content {
+  position: absolute;
+  top: -200%;
+  left: 1rem;
+  z-index: 10000;
+  padding: 0.75rem 1.5rem;
+  background: var(--syn-keyword);
+  color: var(--bg-deep);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: top 0.15s ease;
+  white-space: nowrap;
+}
+
+.skip-to-content:focus {
+  top: 1rem;
+}
+
+/* ── Screen-reader-only utility ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Global focus ring — override browser default ── */
+:focus-visible {
+  outline: 2px solid var(--syn-keyword);
+  outline-offset: 3px;
+}
+
+/* Remove focus ring for mouse/pointer users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ── Range slider focus ── */
+input[type='range']:focus-visible {
+  outline: 2px solid var(--syn-keyword);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+/* ── Minimum touch targets (44 × 44 CSS px) ── */
+button,
+[role='button'] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Slider: expand click area via padding without breaking track height */
+input[type='range'] {
+  min-height: 44px;
+  padding-block: 14px;
+  box-sizing: content-box;
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Hero entrance: reveal immediately instead of animating */
+  .anim-fade-up {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+
+  /* Card hover lift */
+  .anim-card-ready:hover {
+    transform: none !important;
+  }
+
+  /* Play glow pulse */
+  .animate-play-glow {
+    animation: none !important;
+  }
+
+  /* Orb + grid animations */
+  .hero-orb,
+  .hero-dot-grid,
+  .hero-code-deco,
+  .hero-title-gradient,
+  .hero-highlight-bar,
+  .coming-dot,
+  .anim-card-coming::after {
+    animation: none !important;
+  }
+
+  /* Gradient text: fall back to keyword color */
+  .hero-title-gradient {
+    background: none !important;
+    -webkit-text-fill-color: var(--syn-keyword) !important;
+    color: var(--syn-keyword) !important;
+  }
 }

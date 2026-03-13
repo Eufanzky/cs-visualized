@@ -7,6 +7,7 @@ import {
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import PageTransition from '@/components/PageTransition';
 
 /* ── Fonts ─────────────────────────────────────────────────────────── */
 
@@ -79,8 +80,14 @@ export default function RootLayout({
       className={`${jetbrainsMono.variable} ${spaceGrotesk.variable} ${instrumentSerif.variable}`}
     >
       <body className="antialiased">
+        {/* Skip to main content — first focusable element for keyboard/screen-reader users */}
+        <a href="#main-content" className="skip-to-content">
+          Skip to main content
+        </a>
         <Navbar />
-        <main>{children}</main>
+        <main id="main-content" tabIndex={-1}>
+          <PageTransition>{children}</PageTransition>
+        </main>
         <Footer />
       </body>
     </html>
