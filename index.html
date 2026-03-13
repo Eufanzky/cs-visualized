@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CS Animations — Interactive Algorithm Visualizations</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ── Navigation ── -->
+  <nav class="nav">
+    <a href="index.html" class="nav__logo">
+      <span>&gt;</span> cs_animations
+    </a>
+    <ul class="nav__links">
+      <li><a href="#categories">Browse</a></li>
+      <li><a href="https://github.com" target="_blank">Source</a></li>
+    </ul>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="hero__grid"></div>
+    <p class="hero__eyebrow">interactive visualizations</p>
+    <h1 class="hero__title">
+      See the code<br>
+      <span class="highlight"><em>think.</em></span>
+    </h1>
+    <p class="hero__desc">
+      Explore computer science through interactive animations.
+      Watch algorithms sort, search, traverse, and learn — step by step,
+      at your own pace.
+    </p>
+    <div class="hero__meta">
+      <div class="hero__meta-item">
+        <strong>6</strong>
+        categories
+      </div>
+      <div class="hero__meta-item">
+        <strong>30+</strong>
+        animations
+      </div>
+      <div class="hero__meta-item">
+        <strong>0</strong>
+        dependencies
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Categories ── -->
+  <section class="section" id="categories">
+    <div class="section__header">
+      <span class="section__number">01</span>
+      <h2 class="section__title">Explore</h2>
+      <div class="section__line"></div>
+    </div>
+
+    <div class="categories-grid" id="categoriesGrid">
+      <!-- Cards injected by JS -->
+    </div>
+  </section>
+
+  <footer class="footer">
+    cs_animations — built for learning
+  </footer>
+
+  <script src="js/categories.js"></script>
+  <script src="js/home.js"></script>
+</body>
+</html>

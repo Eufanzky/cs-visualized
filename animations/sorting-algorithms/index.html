@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sorting Algorithms — CS Animations</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../../index.html" class="nav__logo">
+      <span>&gt;</span> cs_animations
+    </a>
+    <ul class="nav__links">
+      <li><a href="../../index.html#categories">Browse</a></li>
+    </ul>
+  </nav>
+
+  <section class="category-hero">
+    <div class="category-hero__breadcrumb">
+      <a href="../../index.html">home</a>
+      <span class="sep">/</span>
+      <span>sorting-algorithms</span>
+    </div>
+    <h1 class="category-hero__title">Sorting Algorithms</h1>
+    <p class="category-hero__desc">
+      Watch elements rearrange themselves through comparison, swapping,
+      and partitioning strategies. Step through each pass or let it run.
+    </p>
+  </section>
+
+  <div class="animations-grid" id="animGrid"></div>
+
+  <footer class="footer">
+    cs_animations — built for learning
+  </footer>
+
+  <script src="../../js/categories.js"></script>
+  <script>
+    const cat = CATEGORIES.find(c => c.id === 'sorting-algorithms');
+    const grid = document.getElementById('animGrid');
+
+    cat.animations.forEach(anim => {
+      const card = document.createElement('a');
+      card.className = 'anim-card';
+      card.href = anim.status === 'ready' ? `${anim.id}.html` : '#';
+      if (anim.status !== 'ready') card.style.opacity = '0.5';
+
+      card.innerHTML = `
+        <div class="anim-card__status anim-card__status--${anim.status}">
+          ${anim.status === 'ready' ? '● ready' : '○ coming soon'}
+        </div>
+        <h3 class="anim-card__title">${anim.title}</h3>
+        <span class="anim-card__complexity">${anim.complexity}</span>
+      `;
+
+      grid.appendChild(card);
+    });
+  </script>
+</body>
+</html>
