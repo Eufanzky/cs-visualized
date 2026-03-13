@@ -8,8 +8,10 @@ interface AnimationCanvasProps {
   /** Height of the canvas in CSS pixels (default: 500) */
   height?: number;
   className?: string;
-  /** Current animation status, shown in the corner indicator */
+  /** Current animation status, shown in the status bar */
   status?: 'ready' | 'running' | 'complete';
+  /** Algorithm name displayed in the status bar below the canvas */
+  algorithmName?: string;
 }
 
 const STATUS_CONFIG = {
@@ -21,8 +23,9 @@ const STATUS_CONFIG = {
 /**
  * AnimationCanvas
  *
- * A DPI-aware, responsive canvas wrapper. It owns the resize logic and
- * forwards `canvasRef` to the parent so that `useAnimation` can draw onto it.
+ * A DPI-aware, responsive canvas wrapper with a "technical viewport" aesthetic.
+ * Features corner crop marks, a subtle CRT scanline overlay, and a status bar
+ * below the canvas (not overlaid).
  *
  * Drawing is intentionally NOT done here — the hook handles all rendering so
  * that animation frames stay synchronised with state transitions.
@@ -32,6 +35,7 @@ export function AnimationCanvas({
   height = 500,
   className = '',
   status = 'ready',
+  algorithmName,
 }: AnimationCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { label, dot, text } = STATUS_CONFIG[status];
@@ -69,61 +73,95 @@ export function AnimationCanvas({
   }, [canvasRef, height]);
 
   return (
-    <div
-      ref={containerRef}
-      className={`relative w-full overflow-hidden rounded-2xl bg-[#0d0d14] border border-white/6 shadow-[0_4px_32px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.04)] ${className}`}
-      style={{ minHeight: height }}
-    >
-      <canvas
-        ref={canvasRef}
-        role="img"
-        aria-label="Algorithm visualisation — bar chart showing the current array state. Use the controls below to play, step, or reset the animation."
-        className="block"
-      />
-
-      {/* Inner vignette for depth */}
+    <div className={`flex flex-col ${className}`}>
+      {/* Canvas viewport with corner marks */}
       <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 rounded-2xl"
-        style={{
-          boxShadow: 'inset 0 0 80px rgba(0,0,0,0.55)',
-        }}
-      />
-
-      {/* Completion glow — green pulse overlay when algorithm finishes */}
-      <AnimatePresence>
-        {isComplete && (
-          <motion.div
-            aria-hidden
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.18, 0.06, 0.18, 0] }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.8, times: [0, 0.2, 0.4, 0.6, 1], ease: 'easeOut' }}
-            className="pointer-events-none absolute inset-0 rounded-2xl"
-            style={{
-              background: 'radial-gradient(ellipse at 50% 60%, rgba(166, 218, 149, 0.55) 0%, transparent 65%)',
-              boxShadow: 'inset 0 0 60px rgba(166, 218, 149, 0.12)',
-            }}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Status indicator — bottom-left corner */}
-      <div
-        aria-live="polite"
-        aria-label={`Animation status: ${label}`}
-        className="absolute bottom-3 left-4 flex items-center gap-1.5 rounded-full bg-[#0d0d14]/80 border border-white/8 px-3 py-1 backdrop-blur-sm"
+        ref={containerRef}
+        className="canvas-viewport relative w-full overflow-hidden bg-[#0d0d14]"
+        style={{ minHeight: height }}
       >
-        <span className={`block h-1.5 w-1.5 rounded-full ${dot}`} />
-        <motion.span
-          key={status}
-          initial={{ opacity: 0, x: -4 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
-          className={`text-[10px] font-mono uppercase tracking-widest ${text}`}
+        <canvas
+          ref={canvasRef}
+          role="img"
+          aria-label="Algorithm visualisation — bar chart showing the current array state. Use the controls below to play, step, or reset the animation."
+          className="block"
+        />
+
+        {/* CRT scanline overlay */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)',
+            mixBlendMode: 'multiply',
+          }}
+        />
+
+        {/* Inner vignette for depth */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            boxShadow: 'inset 0 0 80px rgba(0,0,0,0.55)',
+          }}
+        />
+
+        {/* Corner crop marks — viewfinder / technical viewport */}
+        {/* Top-left */}
+        <div aria-hidden className="pointer-events-none absolute top-2.5 left-2.5 w-4 h-4 border-t border-l border-white/[0.15]" />
+        {/* Top-right */}
+        <div aria-hidden className="pointer-events-none absolute top-2.5 right-2.5 w-4 h-4 border-t border-r border-white/[0.15]" />
+        {/* Bottom-left */}
+        <div aria-hidden className="pointer-events-none absolute bottom-2.5 left-2.5 w-4 h-4 border-b border-l border-white/[0.15]" />
+        {/* Bottom-right */}
+        <div aria-hidden className="pointer-events-none absolute bottom-2.5 right-2.5 w-4 h-4 border-b border-r border-white/[0.15]" />
+
+        {/* Completion glow — green pulse overlay when algorithm finishes */}
+        <AnimatePresence>
+          {isComplete && (
+            <motion.div
+              aria-hidden
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.18, 0.06, 0.18, 0] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.8, times: [0, 0.2, 0.4, 0.6, 1], ease: 'easeOut' }}
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background: 'radial-gradient(ellipse at 50% 60%, rgba(166, 218, 149, 0.55) 0%, transparent 65%)',
+                boxShadow: 'inset 0 0 60px rgba(166, 218, 149, 0.12)',
+              }}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Status bar below the canvas */}
+      <div
+        className="flex items-center justify-between border-t border-white/[0.06] bg-[#0b0b12] px-4 py-1.5"
+      >
+        {/* Left: algorithm name */}
+        {algorithmName && (
+          <span className="text-[10px] font-mono uppercase tracking-widest text-[#4a4860]">
+            {algorithmName}
+          </span>
+        )}
+        {/* Right: status indicator */}
+        <div
+          aria-live="polite"
+          aria-label={`Animation status: ${label}`}
+          className="flex items-center gap-1.5 ml-auto"
         >
-          {label}
-        </motion.span>
+          <span className={`block h-1.5 w-1.5 rounded-full ${dot}`} />
+          <motion.span
+            key={status}
+            initial={{ opacity: 0, x: -4 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className={`text-[10px] font-mono uppercase tracking-widest ${text}`}
+          >
+            {label}
+          </motion.span>
+        </div>
       </div>
     </div>
   );

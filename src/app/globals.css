@@ -47,7 +47,7 @@
 
   /* ── Typography ── */
   --font-mono:   'JetBrains Mono', 'Fira Code', monospace;
-  --font-sans:   'Space Grotesk', system-ui, sans-serif;
+  --font-sans:   'Outfit', system-ui, sans-serif;
   --font-serif:  'Instrument Serif', Georgia, serif;
 }
 
@@ -76,7 +76,7 @@
 
   /* Next.js next/font injects CSS variables at runtime; reference them here
      so Tailwind's font-sans / font-mono / font-serif utilities use our fonts */
-  --font-sans:  var(--font-space-grotesk), 'Space Grotesk', system-ui, sans-serif;
+  --font-sans:  var(--font-outfit), 'Outfit', system-ui, sans-serif;
   --font-mono:  var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
   --font-serif: var(--font-instrument-serif), 'Instrument Serif', Georgia, serif;
 }
@@ -114,13 +114,19 @@ body::before {
 }
 
 /* ── Scrollbar ── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
+  background: rgba(42, 42, 58, 0.6);
+  border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+::-webkit-scrollbar-thumb:hover { background: rgba(110, 106, 134, 0.5); }
+
+/* Firefox thin scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(42, 42, 58, 0.6) transparent;
+}
 
 /* ── Text selection ── */
 ::selection {
@@ -270,6 +276,16 @@ input[type='range']::-moz-range-track {
 
 .animate-play-glow {
   animation: playGlow 2s ease-in-out infinite;
+}
+
+/* ── Stat pill background pulse on value change ── */
+@keyframes statPulse {
+  0%   { background-color: rgba(196, 167, 231, 0.08); }
+  100% { background-color: rgba(255, 255, 255, 0.03); }
+}
+
+.stat-pill-bg {
+  animation: statPulse 0.4s ease-out;
 }
 
 /* Focus-visible ring offset colour fix for dark backgrounds */
@@ -629,6 +645,54 @@ input[type='range'] {
 }
 
 /* ── Reduced motion ── */
+/* ── Page glow — radial gradient for inner pages ── */
+.page-glow {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 1200px;
+  height: 600px;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 70% 50% at 50% 0%,
+    var(--page-accent, rgba(196, 167, 231, 0.08)) 0%,
+    transparent 70%
+  );
+}
+
+/* ── Floating card — elevated card with depth ── */
+.float-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.15),
+    0 8px 24px rgba(0, 0, 0, 0.2),
+    0 24px 48px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.3s, border-color 0.3s, transform 0.3s;
+}
+
+.float-card:hover {
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.2),
+    0 12px 32px rgba(0, 0, 0, 0.25),
+    0 32px 56px rgba(0, 0, 0, 0.15);
+}
+
+/* ── Status dot pulse for ready cards ── */
+@keyframes readyPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(166, 218, 149, 0.4); }
+  50%      { box-shadow: 0 0 0 4px rgba(166, 218, 149, 0); }
+}
+
+.ready-dot-pulse {
+  animation: readyPulse 2.5s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -674,5 +738,13 @@ input[type='range'] {
     background: none !important;
     -webkit-text-fill-color: var(--syn-keyword) !important;
     color: var(--syn-keyword) !important;
+  }
+
+  .ready-dot-pulse {
+    animation: none !important;
+  }
+
+  .float-card:hover {
+    transform: none !important;
   }
 }

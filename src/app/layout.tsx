@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import {
   JetBrains_Mono,
-  Space_Grotesk,
+  Outfit,
   Instrument_Serif,
 } from 'next/font/google';
 import './globals.css';
@@ -19,8 +19,8 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
-const spaceGrotesk = Space_Grotesk({
-  variable: '--font-space-grotesk',
+const outfit = Outfit({
+  variable: '--font-outfit',
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
@@ -77,7 +77,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jetbrainsMono.variable} ${spaceGrotesk.variable} ${instrumentSerif.variable}`}
+      className={`${jetbrainsMono.variable} ${outfit.variable} ${instrumentSerif.variable}`}
     >
       <body className="antialiased">
         {/* Skip to main content — first focusable element for keyboard/screen-reader users */}

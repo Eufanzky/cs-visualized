@@ -22,7 +22,7 @@ interface AnimationControlsProps {
 
 function PlayIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
       <path d="M3 2.5a.5.5 0 0 1 .765-.424l10 5.5a.5.5 0 0 1 0 .848l-10 5.5A.5.5 0 0 1 3 13.5v-11Z" />
     </svg>
   );
@@ -30,7 +30,7 @@ function PlayIcon() {
 
 function PauseIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
       <rect x="3" y="2" width="4" height="12" rx="1" />
       <rect x="9" y="2" width="4" height="12" rx="1" />
     </svg>
@@ -118,20 +118,22 @@ function PlayPauseButton({
       title={isPlaying ? 'Pause' : 'Play'}
       aria-label={isPlaying ? 'Pause animation' : 'Play animation'}
       className={[
-        // Base layout & sizing — larger than regular buttons
-        'relative inline-flex items-center gap-2 rounded-xl px-5 py-2.5',
-        'text-sm font-semibold font-mono tracking-wide',
+        // Circle button — prominent hero control
+        'relative inline-flex items-center justify-center',
+        'w-11 h-11 rounded-full',
+        'text-sm font-semibold font-mono',
         'transition-all duration-200 ease-out',
         'disabled:opacity-40 disabled:cursor-not-allowed',
         // Focus ring
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a7e7]/60 focus-visible:ring-offset-1 focus-visible:ring-offset-[#12121a]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c4a7e7]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#12121a]',
         // Press feedback
-        'active:scale-95',
-        // Colors
-        'bg-[#c4a7e7]/20 text-[#c4a7e7] border border-[#c4a7e7]/35',
-        'hover:bg-[#c4a7e7]/30 hover:border-[#c4a7e7]/60 hover:shadow-[0_0_16px_rgba(196,167,231,0.2)]',
-        // Playing-state pulse glow via CSS animation class
-        isPlaying ? 'shadow-[0_0_20px_rgba(196,167,231,0.25)] animate-play-glow' : '',
+        'active:scale-90',
+        // Accent ring + colors
+        'bg-[#c4a7e7]/15 text-[#c4a7e7]',
+        'ring-2 ring-[#c4a7e7]/50',
+        'hover:bg-[#c4a7e7]/25 hover:ring-[#c4a7e7]/80 hover:shadow-[0_0_20px_rgba(196,167,231,0.25)]',
+        // Playing-state pulse glow
+        isPlaying ? 'shadow-[0_0_24px_rgba(196,167,231,0.3)] animate-play-glow ring-[#c4a7e7]/70' : '',
       ].join(' ')}
     >
       {/* Ripple elements */}
@@ -168,11 +170,6 @@ function PlayPauseButton({
           </motion.span>
         )}
       </AnimatePresence>
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.span key={isPlaying ? 'pause-label' : 'play-label'} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.12 }}>
-          {isPlaying ? 'Pause' : 'Play'}
-        </motion.span>
-      </AnimatePresence>
     </button>
   );
 }
@@ -195,12 +192,12 @@ function IconButton({
       title={title}
       aria-label={title}
       className={[
-        'inline-flex items-center gap-2 rounded-lg px-3.5 py-2',
+        'inline-flex items-center justify-center w-8 h-8 rounded-lg',
         'text-sm font-medium font-mono text-[#908caa]',
         'bg-white/5 border border-white/8',
         'transition-all duration-200 ease-out',
         'hover:bg-white/10 hover:border-white/15 hover:text-[#e0def4]',
-        'active:scale-95',
+        'active:scale-90',
         'disabled:opacity-40 disabled:cursor-not-allowed',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-offset-1 focus-visible:ring-offset-[#12121a]',
       ].join(' ')}
@@ -239,11 +236,11 @@ function Slider({
     <div className="flex items-center gap-2.5">
       <label
         htmlFor={id}
-        className="text-xs font-mono text-[#6e6a86] min-w-[38px] uppercase tracking-widest"
+        className="text-[10px] font-mono text-[#6e6a86] min-w-[38px] uppercase tracking-widest"
       >
         {label}
       </label>
-      <div className="relative flex items-center" style={{ width: 112 }}>
+      <div className="relative flex items-center" style={{ width: 100 }}>
         {/* Custom track fill */}
         <div
           className="absolute inset-y-0 left-0 rounded-full pointer-events-none"
@@ -282,8 +279,8 @@ function Slider({
   );
 }
 
-function Separator() {
-  return <div className="h-5 w-px bg-white/8 mx-0.5" aria-hidden />;
+function ZoneSeparator() {
+  return <div className="h-7 w-px bg-white/10 mx-1.5" aria-hidden />;
 }
 
 function StatPill({
@@ -300,7 +297,7 @@ function StatPill({
 }) {
   return (
     <div
-      className="flex items-center gap-1.5 rounded-full bg-white/4 border border-white/6 px-3 py-1 overflow-hidden"
+      className="flex items-center gap-1.5 rounded bg-white/[0.03] border border-white/[0.06] px-2.5 py-1 overflow-hidden stat-pill-bg"
       title={fullLabel ? `${fullLabel}: ${value}` : undefined}
     >
       <span
@@ -324,13 +321,17 @@ function StatPill({
 /**
  * AnimationControls
  *
- * Renders Play/Pause, Step, Reset buttons plus Speed and Size sliders.
- * Also shows real-time counters for the current step, comparisons, and swaps.
+ * Developer-tool console style controls bar with three zones:
+ *   Zone 1: Playback (Play/Pause circle, Step icon, Reset icon)
+ *   Zone 2: Parameters (Speed, Size sliders)
+ *   Zone 3: Metrics (step counter, comparisons, swaps)
+ *
+ * Includes a progress bar at the bottom edge.
  *
  * Keyboard shortcuts (when no text field is focused):
- *   Space       → Play / Pause
- *   ArrowRight  → Step forward
- *   R           → Reset
+ *   Space       -> Play / Pause
+ *   ArrowRight  -> Step forward
+ *   R           -> Reset
  */
 // ── Renderer-specific stat labels ─────────────────────────────────────────
 
@@ -363,22 +364,24 @@ export function AnimationControls({
   const arraySize = array.length;
 
   const sliderSpeedValue = Math.round(speed * 4);
-  const speedLabel = `${speed === Math.floor(speed) ? speed + '.0' : speed}×`;
+  const speedLabel = `${speed === Math.floor(speed) ? speed + '.0' : speed}\u00d7`;
   const totalSteps = steps.length;
 
   const speedFillPct = ((sliderSpeedValue - 1) / (16 - 1)) * 100;
   const sizeFillPct = ((arraySize - minSize) / (maxSize - minSize)) * 100;
 
-  const stepDisplay = totalSteps > 0 ? `${currentStep}/${totalSteps}` : '—';
+  const stepDisplay = totalSteps > 0 ? `${currentStep}/${totalSteps}` : '\u2014';
 
   const statLabels = RENDERER_STAT_LABELS[rendererType] ?? RENDERER_STAT_LABELS['bar-chart'];
+
+  const progressPct = totalSteps > 0 ? (currentStep / totalSteps) * 100 : 0;
 
   // Derive a human-readable status string for the aria-live region
   let liveStatus: string;
   if (isDone) {
     liveStatus = `Animation complete. ${comparisons} ${statLabels.primaryFull}, ${swaps} ${statLabels.secondaryFull} in ${totalSteps} steps.`;
   } else if (isPlaying) {
-    liveStatus = `Playing — step ${currentStep} of ${totalSteps}.`;
+    liveStatus = `Playing \u2014 step ${currentStep} of ${totalSteps}.`;
   } else if (currentStep > 0) {
     liveStatus = `Paused at step ${currentStep} of ${totalSteps}. ${comparisons} ${statLabels.primaryFull}, ${swaps} ${statLabels.secondaryFull} so far.`;
   } else if (isBarChart) {
@@ -390,7 +393,6 @@ export function AnimationControls({
   // ── Global keyboard shortcuts ──────────────────────────────────────────
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // Do not intercept when the user is typing in an input or textarea
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
@@ -424,7 +426,7 @@ export function AnimationControls({
     <div
       role="group"
       aria-label="Animation controls"
-      className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-white/6 bg-[#12121a]/80 backdrop-blur-md px-5 py-3.5 shadow-[0_1px_1px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.04)]"
+      className="relative flex flex-col bg-[#0e0e16] overflow-hidden border-t border-white/[0.06]"
     >
       {/* Screen-reader live region for animation status updates */}
       <div
@@ -436,69 +438,87 @@ export function AnimationControls({
         {liveStatus}
       </div>
 
-      {/* Play/Pause — hero button */}
-      <PlayPauseButton
-        isPlaying={isPlaying}
-        disabled={isDone && !isPlaying}
-        onPlay={onPlay}
-        onPause={onPause}
-      />
+      {/* Main controls row */}
+      <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
+        {/* CONTROLS label */}
+        <span
+          aria-hidden="true"
+          className="text-[9px] font-mono uppercase tracking-[0.2em] text-[#4a4860] mr-1 select-none"
+        >
+          controls
+        </span>
 
-      {/* Step */}
-      <IconButton
-        onClick={onStep}
-        disabled={isPlaying || isDone}
-        title="Step forward one operation (Right Arrow)"
-      >
-        <StepIcon />
-        <span>Step</span>
-      </IconButton>
+        <ZoneSeparator />
 
-      {/* Reset */}
-      <IconButton onClick={onReset} title="Reset with a new random array (R)">
-        <ResetIcon />
-        <span>Reset</span>
-      </IconButton>
-
-      <Separator />
-
-      {/* Speed slider */}
-      <Slider
-        label="Speed"
-        ariaLabel="Animation speed"
-        value={sliderSpeedValue}
-        min={1}
-        max={16}
-        step={1}
-        displayValue={speedLabel}
-        fillPercent={speedFillPct}
-        onChange={v => onSpeedChange(v / 4)}
-      />
-
-      {/* Size slider — only shown for bar-chart (array-based) renderers */}
-      {isBarChart && (
-        <>
-          <Separator />
-          <Slider
-            label="Size"
-            ariaLabel="Array size"
-            value={arraySize}
-            min={minSize}
-            max={maxSize}
-            step={1}
-            fillPercent={sizeFillPct}
-            onChange={onSizeChange}
+        {/* Zone 1: Playback */}
+        <div className="flex items-center gap-1.5">
+          <PlayPauseButton
+            isPlaying={isPlaying}
+            disabled={isDone && !isPlaying}
+            onPlay={onPlay}
+            onPause={onPause}
           />
-        </>
-      )}
+          <IconButton
+            onClick={onStep}
+            disabled={isPlaying || isDone}
+            title="Step forward one operation (Right Arrow)"
+          >
+            <StepIcon />
+          </IconButton>
+          <IconButton onClick={onReset} title="Reset with a new random array (R)">
+            <ResetIcon />
+          </IconButton>
+        </div>
 
-      <Separator />
+        <ZoneSeparator />
 
-      {/* Stats as pill badges */}
-      <div className="flex items-center gap-1.5" aria-label="Animation statistics">
-        <StatPill label="step" fullLabel="step" value={stepDisplay} color="text-[#908caa]" />
-        <StatPill label={statLabels.primary} fullLabel={statLabels.primaryFull} value={comparisons} color="text-[#c4a7e7]" />
-        <StatPill label={statLabels.secondary} fullLabel={statLabels.secondaryFull} value={swaps} color="text-[#f6c177]" />
+        {/* Zone 2: Parameters */}
+        <div className="flex items-center gap-3">
+          <Slider
+            label="Speed"
+            ariaLabel="Animation speed"
+            value={sliderSpeedValue}
+            min={1}
+            max={16}
+            step={1}
+            displayValue={speedLabel}
+            fillPercent={speedFillPct}
+            onChange={v => onSpeedChange(v / 4)}
+          />
+
+          {isBarChart && (
+            <Slider
+              label="Size"
+              ariaLabel="Array size"
+              value={arraySize}
+              min={minSize}
+              max={maxSize}
+              step={1}
+              fillPercent={sizeFillPct}
+              onChange={onSizeChange}
+            />
+          )}
+        </div>
+
+        <ZoneSeparator />
+
+        {/* Zone 3: Metrics */}
+        <div className="flex items-center gap-1.5" aria-label="Animation statistics">
+          <StatPill label="step" fullLabel="step" value={stepDisplay} color="text-[#908caa]" />
+          <StatPill label={statLabels.primary} fullLabel={statLabels.primaryFull} value={comparisons} color="text-[#c4a7e7]" />
+          <StatPill label={statLabels.secondary} fullLabel={statLabels.secondaryFull} value={swaps} color="text-[#f6c177]" />
+        </div>
+      </div>
+
+      {/* Progress bar at the very bottom */}
+      <div className="h-[2px] w-full bg-white/[0.04]" aria-hidden>
+        <motion.div
+          className="h-full bg-[#c4a7e7]"
+          initial={false}
+          animate={{ width: `${progressPct}%` }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
+          style={{ boxShadow: progressPct > 0 ? '0 0 8px rgba(196,167,231,0.4)' : 'none' }}
+        />
       </div>
 
       {/* Keyboard hint — visually subtle, sr-accessible */}

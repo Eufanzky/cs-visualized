@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import type { Metadata } from 'next';
 import { CATEGORIES, getCategoryById } from '@/lib/categories';
 import AnimatedBreadcrumb from '@/components/AnimatedBreadcrumb';
 import AnimCardReveal from '@/components/AnimCardReveal';
+import AnimCardClient from '@/components/AnimCardClient';
 
 /* ── Static params (SSG) ───────────────────────────────────────────── */
 
@@ -43,12 +43,39 @@ export default async function CategoryPage({
 
   return (
     <>
+      {/* ── Atmospheric background glow ─────────────────────────────── */}
+      <div
+        className="page-glow"
+        style={{ '--page-accent': category.glowRgba } as React.CSSProperties}
+        aria-hidden
+      />
+
+      {/* ── Background orb behind header ────────────────────────────── */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '-80px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '500px',
+          height: '500px',
+          borderRadius: '50%',
+          background: `radial-gradient(circle, ${category.accentHex}0d 0%, transparent 70%)`,
+          filter: 'blur(60px)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+        aria-hidden
+      />
+
       {/* ── Category Hero ─────────────────────────────────────────── */}
       <section
         style={{
-          padding: '100px 2rem 40px',
+          padding: '120px 2rem 56px',
           maxWidth: 'var(--max-width)',
           margin: '0 auto',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {/* Animated breadcrumb */}
@@ -60,18 +87,18 @@ export default async function CategoryPage({
         />
 
         {/* Icon + Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1.25rem' }}>
           <div
             style={{
-              width: 52,
-              height: 52,
+              width: 56,
+              height: 56,
               borderRadius: 'var(--radius-sm)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontFamily: 'var(--font-mono)',
               fontWeight: 600,
-              fontSize: '0.9rem',
+              fontSize: '0.95rem',
               background: category.glowRgba,
               border: `1px solid ${category.accentHex}44`,
               color: category.accentHex,
@@ -91,9 +118,10 @@ export default async function CategoryPage({
         <p
           style={{
             color: 'var(--text-secondary)',
-            fontSize: '1.05rem',
-            maxWidth: '560px',
-            lineHeight: 1.7,
+            fontSize: '1.1rem',
+            maxWidth: '580px',
+            lineHeight: 1.75,
+            marginTop: '0.5rem',
           }}
         >
           {category.description}
@@ -104,7 +132,7 @@ export default async function CategoryPage({
           style={{
             display: 'flex',
             gap: '2rem',
-            marginTop: '2rem',
+            marginTop: '2.5rem',
             fontFamily: 'var(--font-mono)',
             fontSize: '0.72rem',
             color: 'var(--text-muted)',
@@ -163,9 +191,11 @@ export default async function CategoryPage({
       {/* ── Animations Grid ───────────────────────────────────────── */}
       <section
         style={{
-          padding: '40px 2rem 120px',
+          padding: '48px 2rem 120px',
           maxWidth: 'var(--max-width)',
           margin: '0 auto',
+          position: 'relative',
+          zIndex: 1,
         }}
       >
         {/* Ready animations first */}
@@ -193,7 +223,7 @@ export default async function CategoryPage({
             >
               {readyAnims.map((anim, i) => (
                 <AnimCardReveal key={anim.id} index={i}>
-                  <AnimCard
+                  <AnimCardClient
                     href={`/animation/${category.id}/${anim.id}`}
                     title={anim.title}
                     complexity={anim.complexity}
@@ -230,7 +260,7 @@ export default async function CategoryPage({
             >
               {comingAnims.map((anim, i) => (
                 <AnimCardReveal key={anim.id} index={i}>
-                  <AnimCard
+                  <AnimCardClient
                     href="#"
                     title={anim.title}
                     complexity={anim.complexity}
@@ -244,98 +274,5 @@ export default async function CategoryPage({
         )}
       </section>
     </>
-  );
-}
-
-/* ── Animation Card Sub-component ──────────────────────────────────── */
-
-interface AnimCardProps {
-  href: string;
-  title: string;
-  complexity: string;
-  status: 'ready' | 'coming';
-  accentHex: string;
-}
-
-function AnimCard({ href, title, complexity, status, accentHex }: AnimCardProps) {
-  const isReady = status === 'ready';
-
-  return (
-    <Link
-      href={href}
-      style={{
-        display: 'block',
-        background: 'var(--bg-surface)',
-        border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--radius-md)',
-        padding: '1.5rem',
-        textDecoration: 'none',
-        transition: 'border-color 0.25s, background 0.25s, transform 0.25s',
-        opacity: isReady ? 1 : 0.65,
-        cursor: isReady ? 'pointer' : 'default',
-        pointerEvents: isReady ? 'auto' : 'none',
-      }}
-      /* Inline hover via onMouse is only available in client components.
-         For a server component sub-function we rely on CSS — add a className
-         or use a CSS-in-JS trick. Since this file is a server component we keep
-         the styling static; interactive hover is layered via globals.css below. */
-      className={isReady ? 'anim-card-ready' : 'anim-card-coming'}
-    >
-      {/* Status badge */}
-      <div
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.62rem',
-          textTransform: 'uppercase',
-          letterSpacing: '0.12em',
-          color: isReady ? 'var(--syn-success)' : 'var(--text-muted)',
-          marginBottom: '0.75rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.45rem',
-        }}
-      >
-        {/* Ready: solid dot; Coming: pulsing dot */}
-        {isReady ? (
-          <span
-            style={{
-              display: 'inline-block',
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              background: 'var(--syn-success)',
-            }}
-          />
-        ) : (
-          <span className="coming-dot" />
-        )}
-        {isReady ? 'ready' : 'coming soon'}
-      </div>
-
-      {/* Title */}
-      <h3
-        style={{
-          fontSize: '1.05rem',
-          fontWeight: 500,
-          color: 'var(--text-primary)',
-          marginBottom: '0.5rem',
-          letterSpacing: '-0.01em',
-        }}
-      >
-        {title}
-      </h3>
-
-      {/* Complexity */}
-      <div
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.72rem',
-          color: accentHex,
-          letterSpacing: '0.03em',
-        }}
-      >
-        {complexity}
-      </div>
-    </Link>
   );
 }
