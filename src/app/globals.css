@@ -1,0 +1,201 @@
+@import "tailwindcss";
+
+/* ============================================
+   CS Visualized — Design System
+   Terminal × Editorial aesthetic
+   Color system derived from syntax highlighting
+   ============================================ */
+
+:root {
+  /* ── Base backgrounds ── */
+  --bg-deep:        #0a0a0f;
+  --bg-surface:     #12121a;
+  --bg-elevated:    #1a1a26;
+  --bg-hover:       #222233;
+  --border:         #2a2a3a;
+  --border-subtle:  #1e1e2e;
+
+  /* ── Text ── */
+  --text-primary:   #e0def4;
+  --text-secondary: #908caa;
+  --text-muted:     #6e6a86;
+
+  /* ── Syntax Palette ── */
+  --syn-keyword:    #c4a7e7;   /* purple  — Graph Algorithms  */
+  --syn-function:   #ebbcba;   /* rose    — Data Structures   */
+  --syn-string:     #9ccfd8;   /* teal    — Search Algorithms */
+  --syn-number:     #f6c177;   /* gold    — Sorting Algorithms */
+  --syn-comment:    #6e6a86;   /* muted   — Dynamic Programming */
+  --syn-type:       #ea9a97;   /* coral   — Neural Networks   */
+  --syn-operator:   #3e8fb0;   /* blue    — accent            */
+  --syn-error:      #eb6f92;   /* red     — errors            */
+  --syn-success:    #a6da95;   /* green   — success states    */
+
+  /* ── Glow variants (15 % opacity) ── */
+  --glow-keyword:   rgba(196, 167, 231, 0.15);
+  --glow-function:  rgba(235, 188, 186, 0.15);
+  --glow-string:    rgba(156, 207, 216, 0.15);
+  --glow-number:    rgba(246, 193, 119, 0.15);
+  --glow-comment:   rgba(110, 106, 134, 0.15);
+  --glow-type:      rgba(234, 154, 151, 0.15);
+
+  /* ── Layout ── */
+  --max-width:    1280px;
+  --radius-sm:    4px;
+  --radius-md:    8px;
+  --radius-lg:    16px;
+
+  /* ── Typography ── */
+  --font-mono:   'JetBrains Mono', 'Fira Code', monospace;
+  --font-sans:   'Space Grotesk', system-ui, sans-serif;
+  --font-serif:  'Instrument Serif', Georgia, serif;
+}
+
+/* Expose design tokens to Tailwind v4 theme engine */
+@theme inline {
+  --color-bg-deep:       var(--bg-deep);
+  --color-bg-surface:    var(--bg-surface);
+  --color-bg-elevated:   var(--bg-elevated);
+  --color-bg-hover:      var(--bg-hover);
+  --color-border-base:   var(--border);
+  --color-border-subtle: var(--border-subtle);
+
+  --color-text-primary:   var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted:     var(--text-muted);
+
+  --color-syn-keyword:  var(--syn-keyword);
+  --color-syn-function: var(--syn-function);
+  --color-syn-string:   var(--syn-string);
+  --color-syn-number:   var(--syn-number);
+  --color-syn-comment:  var(--syn-comment);
+  --color-syn-type:     var(--syn-type);
+  --color-syn-operator: var(--syn-operator);
+  --color-syn-error:    var(--syn-error);
+  --color-syn-success:  var(--syn-success);
+
+  /* Next.js next/font injects CSS variables at runtime; reference them here
+     so Tailwind's font-sans / font-mono / font-serif utilities use our fonts */
+  --font-sans:  var(--font-space-grotesk), 'Space Grotesk', system-ui, sans-serif;
+  --font-mono:  var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+  --font-serif: var(--font-instrument-serif), 'Instrument Serif', Georgia, serif;
+}
+
+/* ── Reset ── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Noise texture overlay ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ── Text selection ── */
+::selection {
+  background: var(--syn-keyword);
+  color: var(--bg-deep);
+}
+
+/* ── Links ── */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ── Range slider ── */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--syn-keyword);
+  cursor: pointer;
+  border: 2px solid var(--bg-deep);
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--syn-keyword);
+  cursor: pointer;
+  border: 2px solid var(--bg-deep);
+  box-sizing: border-box;
+}
+
+/* ── Keyframe animations ── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Staggered hero entrance helpers */
+.anim-fade-up {
+  opacity: 0;
+  animation: fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.anim-delay-0  { animation-delay: 0s; }
+.anim-delay-1  { animation-delay: 0.15s; }
+.anim-delay-2  { animation-delay: 0.30s; }
+.anim-delay-3  { animation-delay: 0.45s; }
+.anim-delay-4  { animation-delay: 0.60s; }
+
+/* ── Animation card hover (server-component-safe) ── */
+.anim-card-ready:hover {
+  border-color: var(--border) !important;
+  background: var(--bg-elevated) !important;
+  transform: translateY(-2px);
+}
+
+/* ── Breadcrumb link hover ── */
+.breadcrumb-link:hover {
+  color: var(--text-primary) !important;
+}
