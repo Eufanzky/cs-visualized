@@ -8,9 +8,11 @@ import {
   getSwapFrames,
   reset,
   speedToDelay,
-  COLORS,
+  type RendererType,
 } from '../lib/animation-engine';
-import type { StepGenerator } from '../lib/algorithms';
+import { getRenderer } from '../lib/renderers';
+import { drawBarChart } from '../lib/renderers/bar-chart';
+import { isStepResult, type StepGenerator } from '../lib/algorithms';
 
 // ── Return type ───────────────────────────────────────────────────────────
 
@@ -30,12 +32,13 @@ export interface UseAnimationReturn {
 export function useAnimation(
   algorithmId: string,
   generateSteps: StepGenerator,
-  initialSize = 24
+  initialSize = 24,
+  rendererType: RendererType = 'bar-chart'
 ): UseAnimationReturn {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [state, setState] = useState<AnimationState>(() =>
-    reset(initialSize, 1)
+    reset(initialSize, 1, rendererType, null)
   );
 
   // Keep a ref to state so async callbacks see the latest value without
@@ -48,128 +51,59 @@ export function useAnimation(
   // Flag to interrupt an in-progress play loop
   const playingRef = useRef(false);
 
+  // Keep rendererType stable across re-renders
+  const rendererTypeRef = useRef(rendererType);
+  useEffect(() => {
+    rendererTypeRef.current = rendererType;
+  }, [rendererType]);
+
+  // ── Internal draw helper ──────────────────────────────────────────────
+
+  /**
+   * Obtain canvas context and css dimensions.
+   * Returns null if the canvas is not yet mounted.
+   */
+  function getCtx(): { ctx: CanvasRenderingContext2D; w: number; h: number } | null {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    const dpr = window.devicePixelRatio || 1;
+    return { ctx, w: canvas.width / dpr, h: canvas.height / dpr };
+  }
+
   // ── Canvas drawing ────────────────────────────────────────────────────
 
+  /**
+   * Draws the current state onto the canvas using the appropriate renderer.
+   * For bar-chart mode with overrides, calls drawBarChart directly (for swap animation).
+   */
   const draw = useCallback(
     (
       overrideArray?: number[],
       overrideComparing?: number[],
       overrideSwapping?: number[],
-      overrideSorted?: Set<number>,
-      overrideStatus?: string
+      overrideSorted?: Set<number>
     ) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      const result = getCtx();
+      if (!result) return;
+      const { ctx, w, h } = result;
 
       const s = stateRef.current;
-      const arr = overrideArray ?? s.array;
-      const comparing = overrideComparing ?? s.comparingIndices;
-      const swapping = overrideSwapping ?? s.swappingIndices;
-      const sorted = overrideSorted ?? s.sortedIndices;
+      const type = rendererTypeRef.current;
 
-      const dpr = window.devicePixelRatio || 1;
-      const w = canvas.width / dpr;
-      const h = canvas.height / dpr;
-
-      ctx.clearRect(0, 0, w, h);
-
-      const padding = 40;
-      const gap = 2;
-      const n = arr.length;
-      const totalGaps = (n - 1) * gap;
-      const barWidth = (w - padding * 2 - totalGaps) / n;
-      const maxBarHeight = h - padding * 2 - 30;
-
-      for (let i = 0; i < n; i++) {
-        const x = padding + i * (barWidth + gap);
-        const barH = arr[i] * maxBarHeight;
-        const y = h - padding - barH;
-
-        let color: string = COLORS.default;
-        let glow = false;
-
-        if (sorted.has(i)) {
-          color = COLORS.sorted;
-        }
-        if (comparing.includes(i)) {
-          color = COLORS.comparing;
-          glow = true;
-        }
-        if (swapping.includes(i)) {
-          color = COLORS.swapping;
-          glow = true;
-        }
-
-        if (glow) {
-          ctx.shadowColor = color;
-          ctx.shadowBlur = 20;
-        }
-
-        const radius = Math.min(barWidth / 2, 4);
-        ctx.beginPath();
-        ctx.moveTo(x + radius, y);
-        ctx.lineTo(x + barWidth - radius, y);
-        ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + radius);
-        ctx.lineTo(x + barWidth, y + barH);
-        ctx.lineTo(x, y + barH);
-        ctx.lineTo(x, y + radius);
-        ctx.quadraticCurveTo(x, y, x + radius, y);
-        ctx.closePath();
-
-        const grad = ctx.createLinearGradient(x, y, x, y + barH);
-        // Slightly lighter shade at top for depth
-        grad.addColorStop(0, color + 'cc');
-        grad.addColorStop(1, color);
-        ctx.fillStyle = grad;
-        ctx.fill();
-
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-
-        // Value label when bars are wide enough
-        if (barWidth > 18) {
-          ctx.fillStyle = COLORS.textMuted;
-          ctx.font = `${Math.min(10, barWidth * 0.4)}px JetBrains Mono, monospace`;
-          ctx.textAlign = 'center';
-          ctx.fillText(
-            String(Math.round(arr[i] * 100)),
-            x + barWidth / 2,
-            h - padding + 14
-          );
-        }
-      }
-
-      // Status line
-      const isDone = overrideStatus === 'done' || s.isDone;
-      ctx.fillStyle = COLORS.textMuted;
-      ctx.font = '11px JetBrains Mono, monospace';
-      ctx.textAlign = 'left';
-
-      let statusText = 'ready';
-      if (s.isPlaying) statusText = 'sorting…';
-      if (isDone) statusText = 'sorted ✓';
-
-      ctx.fillText(`n=${n}  |  ${statusText}`, padding, 24);
-
-      if (comparing.length === 2) {
-        ctx.fillStyle = COLORS.comparing;
-        ctx.textAlign = 'right';
-        ctx.fillText(
-          `comparing [${comparing[0]}] & [${comparing[1]}]`,
-          w - padding,
-          24
-        );
-      }
-      if (swapping.length === 2) {
-        ctx.fillStyle = COLORS.swapping;
-        ctx.textAlign = 'right';
-        ctx.fillText(
-          `swapping [${swapping[0]}] ↔ [${swapping[1]}]`,
-          w - padding,
-          24
-        );
+      if (
+        type === 'bar-chart' &&
+        (overrideArray !== undefined ||
+          overrideComparing !== undefined ||
+          overrideSwapping !== undefined ||
+          overrideSorted !== undefined)
+      ) {
+        // Direct call with overrides for swap frame interpolation
+        drawBarChart(ctx, w, h, s.scene ?? null, s, overrideArray, overrideComparing, overrideSwapping, overrideSorted);
+      } else {
+        const renderer = getRenderer(type);
+        renderer(ctx, w, h, s.scene ?? null, s);
       }
     },
     []
@@ -187,13 +121,15 @@ export function useAnimation(
       return new Promise(resolve => {
         const delay = speedToDelay(speed);
         const s = stateRef.current;
+        const isBarChart = rendererTypeRef.current === 'bar-chart';
 
         if (step.type === 'compare') {
           const next = applyStep(s, step);
           setState(next);
           stateRef.current = next;
           setTimeout(() => resolve(next), delay);
-        } else if (step.type === 'swap') {
+        } else if (step.type === 'swap' && isBarChart && step.indices.length === 2) {
+          // Bar-chart swap animation with interpolated frames
           const [a, b] = step.indices;
           const frames = getSwapFrames(s.array, a, b, 12);
           let frameIdx = 0;
@@ -208,8 +144,12 @@ export function useAnimation(
           stateRef.current = preSwap;
 
           function animateFrame() {
+            const result = getCtx();
+            if (!result) return;
+            const { ctx, w, h } = result;
+
             const frame = frames[frameIdx];
-            draw(frame, [], [a, b], stateRef.current.sortedIndices);
+            drawBarChart(ctx, w, h, stateRef.current.scene ?? null, stateRef.current, frame, [], [a, b], stateRef.current.sortedIndices);
 
             frameIdx++;
             if (frameIdx < frames.length) {
@@ -217,7 +157,6 @@ export function useAnimation(
             } else {
               // Commit the swap to state
               const next = applyStep(stateRef.current, step);
-              // Restore the correctly-swapped array (applyStep already does this)
               setState(next);
               stateRef.current = next;
               setTimeout(() => resolve(next), Math.round(delay * 0.3));
@@ -231,10 +170,16 @@ export function useAnimation(
           stateRef.current = next;
           resolve(next);
         } else {
+          // swap (non-bar-chart), unsorted, pivot, etc.
           const next = applyStep(s, step);
           setState(next);
           stateRef.current = next;
-          resolve(next);
+          // For non-bar-chart renderers, add delay so steps are visible
+          if (!isBarChart) {
+            setTimeout(() => resolve(next), delay);
+          } else {
+            resolve(next);
+          }
         }
       });
     },
@@ -257,9 +202,16 @@ export function useAnimation(
     // Generate steps if we're starting fresh
     let steps = stateRef.current.steps;
     if (steps.length === 0 || stateRef.current.currentStep >= steps.length) {
-      steps = generateSteps(stateRef.current.array);
-      setState(prev => ({ ...prev, steps, currentStep: 0 }));
-      stateRef.current = { ...stateRef.current, steps, currentStep: 0 };
+      const result = generateSteps(stateRef.current.array);
+      if (isStepResult(result)) {
+        steps = result.steps;
+        setState(prev => ({ ...prev, steps, currentStep: 0, scene: result.initialScene }));
+        stateRef.current = { ...stateRef.current, steps, currentStep: 0, scene: result.initialScene };
+      } else {
+        steps = result;
+        setState(prev => ({ ...prev, steps, currentStep: 0 }));
+        stateRef.current = { ...stateRef.current, steps, currentStep: 0 };
+      }
     }
 
     async function runLoop() {
@@ -299,8 +251,13 @@ export function useAnimation(
 
     // Generate steps on demand
     if (s.steps.length === 0 || s.currentStep >= s.steps.length) {
-      const newSteps = generateSteps(s.array);
-      const updated = { ...s, steps: newSteps, currentStep: 0 };
+      const result = generateSteps(s.array);
+      let updated: AnimationState;
+      if (isStepResult(result)) {
+        updated = { ...s, steps: result.steps, currentStep: 0, scene: result.initialScene };
+      } else {
+        updated = { ...s, steps: result, currentStep: 0 };
+      }
       setState(updated);
       stateRef.current = updated;
       s = updated;
@@ -318,7 +275,7 @@ export function useAnimation(
     (newSize?: number) => {
       playingRef.current = false;
       const size = newSize ?? stateRef.current.array.length;
-      const fresh = reset(size, stateRef.current.speed);
+      const fresh = reset(size, stateRef.current.speed, rendererTypeRef.current, null);
       setState(fresh);
       stateRef.current = fresh;
     },

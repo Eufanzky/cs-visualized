@@ -1,77 +1,122 @@
-import type { AnimationStep } from '../animation-engine';
+import type { AnimationStep, DPCell, DPGridScene, StepResult } from '../animation-engine';
 
 /**
- * Generates AnimationSteps for Fibonacci computed with memoization.
+ * Generates a StepResult for Fibonacci computed with memoization.
  *
- * The `arr` parameter controls which Fibonacci number to compute:
- *   n = clamp(arr.length + 3, 6, 14)
- * This keeps the step count reasonable for small and large input arrays.
+ * Returns:
+ *   - initialScene: a DPGridScene with a single row of n+1 empty cells
+ *   - steps: each step carries a full sceneUpdate patching the grid
  *
- * Steps produced:
- *   - compare  → a cache lookup is attempted for fib(k)
- *   - swap     → computing fib(k) for the first time (cache miss → store result)
- *   - sorted   → fib(k) was already in the cache (cache hit)
- *   - done     → fib(n) has been computed
+ * n = clamp(arr.length + 3, 6, 14)
  *
- * The `indices` field carries [k] — the current Fibonacci argument — which
- * renderers can use to light up the call-tree node for fib(k).
+ * Cell states used:
+ *   'computing'  → currently being evaluated (purple)
+ *   'computed'   → value stored in cache (green)
+ *   'backtrack'  → cache hit highlight (gold) — mapped to 'highlight' for renderer
  */
 
-export function generateFibonacciSteps(arr: number[]): AnimationStep[] {
+function makeGrid(n: number, values: (string | null)[], computingIdx: number | null, highlightIdx: number | null): DPCell[][] {
+  const row: DPCell[] = [];
+  for (let k = 0; k <= n; k++) {
+    let state = 'default';
+    if (k === computingIdx) state = 'computing';
+    else if (k === highlightIdx) state = 'highlight';
+    else if (values[k] !== null) state = 'computed';
+    row.push({ row: 0, col: k, value: values[k] ?? '', state });
+  }
+  return [row];
+}
+
+export function generateFibonacciSteps(arr: number[]): StepResult {
   const steps: AnimationStep[] = [];
 
-  // Derive n from arr length; clamp to [6, 14] to stay visually tractable
+  // Derive n from arr length; clamp to [6, 14]
   const n = Math.min(14, Math.max(6, arr.length + 3));
+
+  const colLabels = Array.from({ length: n + 1 }, (_, k) => String(k));
+
+  // Track which cells have been filled
+  const values: (string | null)[] = new Array(n + 1).fill(null);
 
   const memo: Map<number, number> = new Map();
   memo.set(0, 0);
   memo.set(1, 1);
+  values[0] = '0';
+  values[1] = '1';
 
+  // Initial scene: row of n+1 empty cells with base cases pre-filled
+  const initialScene: DPGridScene = {
+    type: 'dp-grid',
+    grid: makeGrid(n, values, null, null),
+    colLabels,
+  };
+
+  // Intro step — show the initial seeded grid
   steps.push({
     type: 'compare',
     indices: [n],
     description: `Computing fib(${n}) with memoization — cache pre-seeded: fib(0)=0, fib(1)=1`,
+    sceneUpdate: {
+      type: 'dp-grid',
+      grid: makeGrid(n, values, null, null),
+      colLabels,
+    },
   });
 
-  /**
-   * Iterative simulation of the memoized top-down call order.
-   * We walk from fib(2) up to fib(n), emitting steps that mirror what the
-   * recursive memoized function would do on a cold cache.
-   */
   for (let k = 2; k <= n; k++) {
-    // Cache lookup step
+    // Cache lookup — highlight the cell being computed
     steps.push({
       type: 'compare',
       indices: [k],
       description: `computing fib(${k}) — looking up cache`,
+      sceneUpdate: {
+        type: 'dp-grid',
+        grid: makeGrid(n, values, k, null),
+        colLabels,
+      },
     });
 
     if (memo.has(k)) {
-      // Cache hit (only possible if the same value is revisited — in this
-      // iterative simulation it won't happen, but the step is emitted for
-      // correctness if the pattern is extended)
+      // Cache hit — highlight gold
       steps.push({
         type: 'sorted',
         indices: [k],
         description: `cache hit for fib(${k}) = ${memo.get(k)}`,
+        sceneUpdate: {
+          type: 'dp-grid',
+          grid: makeGrid(n, values, null, k),
+          colLabels,
+        },
       });
     } else {
-      // Cache miss: compute and store
+      // Cache miss — compute and store
       const result = memo.get(k - 1)! + memo.get(k - 2)!;
       memo.set(k, result);
+      values[k] = String(result);
 
+      // Show writing the result (still computing color until 'sorted' step)
       steps.push({
         type: 'swap',
         indices: [k],
         values: [result],
         description: `cache miss — computing fib(${k}) = fib(${k - 1}) + fib(${k - 2}) = ${memo.get(k - 1)} + ${memo.get(k - 2)} = ${result}, storing in cache`,
+        sceneUpdate: {
+          type: 'dp-grid',
+          grid: makeGrid(n, values, k, null),
+          colLabels,
+        },
       });
 
-      // Mark fib(k) as resolved (cached)
+      // Settle the cell as computed (green)
       steps.push({
         type: 'sorted',
         indices: [k],
         description: `fib(${k}) = ${result} cached`,
+        sceneUpdate: {
+          type: 'dp-grid',
+          grid: makeGrid(n, values, null, null),
+          colLabels,
+        },
       });
     }
   }
@@ -80,7 +125,12 @@ export function generateFibonacciSteps(arr: number[]): AnimationStep[] {
     type: 'done',
     indices: [n],
     description: `fib(${n}) = ${memo.get(n)} — computed in ${n - 1} unique subproblems (memoization avoided ${Math.pow(2, n) - 1} redundant calls of naïve recursion)`,
+    sceneUpdate: {
+      type: 'dp-grid',
+      grid: makeGrid(n, values, null, null),
+      colLabels,
+    },
   });
 
-  return steps;
+  return { steps, initialScene };
 }

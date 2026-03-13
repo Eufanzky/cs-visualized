@@ -1,128 +1,195 @@
-import type { AnimationStep } from '../animation-engine';
+import type { AnimationStep, LinearScene, LinearItem, StepResult } from '../animation-engine';
 
 /**
  * Generates the full ordered list of AnimationSteps for Linked List operations.
  *
- * The visualisation maps each node to an array index; node values come from the
- * caller's `arr`.  The demo walks through three phases:
- *   1. Build — sequentially insert nodes to form the initial list
- *   2. Search — traverse the list hunting for a target value
- *   3. Delete — unlink the found node and stitch neighbours together
+ * Returns { steps, initialScene } where initialScene is an empty LinearScene
+ * with structureType 'linked-list'. Each step carries a sceneUpdate that
+ * reflects the current list state so the linear renderer always has accurate
+ * data.
  *
- * Steps produced:
- *   - compare  → a node is being visited / traversed
- *   - swap     → an insertion or deletion is being applied
- *   - sorted   → a node has been confirmed as part of the final list
- *   - done     → all operations are complete
+ * Three phases:
+ *   1. Build  — append nodes one at a time
+ *   2. Search — traverse with 'active' highlight looking for the middle node
+ *   3. Delete — mark the found node as 'removed', then remove it
  */
-export function generateLinkedListSteps(arr: number[]): AnimationStep[] {
+export function generateLinkedListSteps(arr: number[]): StepResult {
   const steps: AnimationStep[] = [];
 
-  // Cap list size for readability
-  const nodes = arr.slice(0, Math.min(8, arr.length));
+  const nodes = arr.slice(0, Math.min(7, arr.length));
   const n = nodes.length;
   const fmt = (v: number) => Math.round(v * 100).toString();
 
   if (n === 0) {
-    steps.push({ type: 'done', indices: [], description: 'Empty list' });
-    return steps;
+    const initialScene: LinearScene = {
+      type: 'linear',
+      structureType: 'linked-list',
+      items: [],
+      pointers: [{ index: -1, label: 'HEAD' }],
+    };
+    steps.push({
+      type: 'done',
+      indices: [],
+      description: 'Empty list',
+      sceneUpdate: initialScene,
+    });
+    return { steps, initialScene };
   }
 
-  // ── Phase 1: Build the list ────────────────────────────────────────────
-  const list: number[] = [];
+  // Mutable logical list (array of display strings)
+  const list: string[] = [];
 
+  /** Build LinearItem array from the current list. */
+  function buildItems(
+    activeIdx?: number,
+    leavingIdx?: number,
+  ): LinearItem[] {
+    return list.map((val, i) => {
+      if (leavingIdx !== undefined && i === leavingIdx) return { value: val, state: 'removed' };
+      if (activeIdx !== undefined && i === activeIdx) return { value: val, state: 'active' };
+      return { value: val, state: 'default' };
+    });
+  }
+
+  /** HEAD pointer always at index 0 when list is non-empty, else -1. */
+  function headPointer(len: number) {
+    return [{ index: len > 0 ? 0 : -1, label: 'HEAD' }];
+  }
+
+  // ── Phase 1: Build ──────────────────────────────────────────────────────
   for (let i = 0; i < n; i++) {
-    const val = nodes[i];
+    const val = fmt(nodes[i]);
 
     if (list.length > 0) {
-      // Show traversal to the current tail before inserting
+      // Show tail being visited before append
       steps.push({
         type: 'compare',
         indices: [list.length - 1],
-        description: `Traversing to node ${fmt(list[list.length - 1])} to append next node`,
+        description: `Traversing to tail node ${list[list.length - 1]} to append ${val}`,
+        sceneUpdate: {
+          type: 'linear',
+          structureType: 'linked-list',
+          items: buildItems(list.length - 1),
+          pointers: headPointer(list.length),
+        } as LinearScene,
       });
     }
 
-    // Insert new node at the tail
-    steps.push({
-      type: 'swap',
-      indices: [list.length],
-      values: [...list, val],
-      description:
-        list.length === 0
-          ? `Inserting head node ${fmt(val)}`
-          : `Inserting ${fmt(val)} after node ${fmt(list[list.length - 1])}`,
-    });
     list.push(val);
 
-    // Node is now settled
+    // Insert: show new node as 'inserted'
+    steps.push({
+      type: 'swap',
+      indices: [list.length - 1],
+      description:
+        list.length === 1
+          ? `Inserting head node ${val}`
+          : `Inserting ${val} after ${list[list.length - 2]}`,
+      sceneUpdate: {
+        type: 'linear',
+        structureType: 'linked-list',
+        items: buildItems(list.length - 1),
+        pointers: headPointer(list.length),
+      } as LinearScene,
+    });
+
+    // Settle
     steps.push({
       type: 'sorted',
       indices: [list.length - 1],
-      description: `Node ${fmt(val)} linked at position ${list.length - 1}`,
+      description: `Node ${val} linked at position ${list.length - 1}`,
+      sceneUpdate: {
+        type: 'linear',
+        structureType: 'linked-list',
+        items: buildItems(),
+        pointers: headPointer(list.length),
+      } as LinearScene,
     });
   }
 
-  // ── Phase 2: Search for the middle node ───────────────────────────────
+  // ── Phase 2: Search ─────────────────────────────────────────────────────
   const searchIndex = Math.floor(n / 2);
   const searchTarget = list[searchIndex];
 
   steps.push({
     type: 'compare',
     indices: [0],
-    description: `Starting traversal from head to find node ${fmt(searchTarget)}`,
+    description: `Starting traversal from HEAD to find node ${searchTarget}`,
+    sceneUpdate: {
+      type: 'linear',
+      structureType: 'linked-list',
+      items: buildItems(0),
+      pointers: headPointer(list.length),
+    } as LinearScene,
   });
 
   for (let i = 0; i < searchIndex; i++) {
     steps.push({
       type: 'compare',
       indices: [i],
-      description: `Visiting node ${fmt(list[i])} — not the target, following next pointer`,
+      description: `Visiting node ${list[i]} — not the target, following next pointer`,
+      sceneUpdate: {
+        type: 'linear',
+        structureType: 'linked-list',
+        items: buildItems(i),
+        pointers: headPointer(list.length),
+      } as LinearScene,
     });
   }
 
   steps.push({
     type: 'compare',
     indices: [searchIndex],
-    description: `Found target node ${fmt(searchTarget)} at position ${searchIndex}`,
+    description: `Found target node ${searchTarget} at position ${searchIndex}`,
+    sceneUpdate: {
+      type: 'linear',
+      structureType: 'linked-list',
+      items: buildItems(searchIndex),
+      pointers: headPointer(list.length),
+    } as LinearScene,
   });
 
-  // ── Phase 3: Delete the found node ────────────────────────────────────
+  // ── Phase 3: Delete ─────────────────────────────────────────────────────
   if (n > 1) {
     const prevIndex = searchIndex - 1;
     const nextIndex = searchIndex + 1;
 
+    let description: string;
     if (prevIndex >= 0 && nextIndex < n) {
-      steps.push({
-        type: 'swap',
-        indices: [prevIndex, searchIndex],
-        description: `Re-linking: node ${fmt(list[prevIndex])} → node ${fmt(list[nextIndex])} (skipping ${fmt(searchTarget)})`,
-      });
+      description = `Re-linking: node ${list[prevIndex]} → node ${list[nextIndex]} (skipping ${searchTarget})`;
     } else if (prevIndex < 0) {
-      // Deleting head
-      steps.push({
-        type: 'swap',
-        indices: [searchIndex],
-        description: `Removing head node ${fmt(searchTarget)} — new head is ${fmt(list[nextIndex])}`,
-      });
+      description = `Removing head node ${searchTarget} — new HEAD is ${list[nextIndex]}`;
     } else {
-      // Deleting tail
-      steps.push({
-        type: 'swap',
-        indices: [searchIndex],
-        description: `Removing tail node ${fmt(searchTarget)} — new tail is ${fmt(list[prevIndex])}`,
-      });
+      description = `Removing tail node ${searchTarget} — new tail is ${list[prevIndex]}`;
     }
 
-    // Mark remaining nodes as settled after deletion
-    const remaining: number[] = [];
-    for (let i = 0; i < n; i++) {
-      if (i !== searchIndex) remaining.push(i > searchIndex ? i - 1 : i);
-    }
+    // Show node as leaving
+    steps.push({
+      type: 'swap',
+      indices: [searchIndex],
+      description,
+      sceneUpdate: {
+        type: 'linear',
+        structureType: 'linked-list',
+        items: buildItems(undefined, searchIndex),
+        pointers: headPointer(list.length),
+      } as LinearScene,
+    });
+
+    // Remove node from list
+    list.splice(searchIndex, 1);
+
+    // Remaining nodes settle
     steps.push({
       type: 'sorted',
-      indices: remaining,
-      description: `Node ${fmt(searchTarget)} removed — list has ${n - 1} nodes remaining`,
+      indices: list.map((_, i) => i),
+      description: `Node ${searchTarget} removed — list has ${list.length} nodes remaining`,
+      sceneUpdate: {
+        type: 'linear',
+        structureType: 'linked-list',
+        items: buildItems(),
+        pointers: headPointer(list.length),
+      } as LinearScene,
     });
   }
 
@@ -130,7 +197,20 @@ export function generateLinkedListSteps(arr: number[]): AnimationStep[] {
     type: 'done',
     indices: [],
     description: 'Linked list operations complete',
+    sceneUpdate: {
+      type: 'linear',
+      structureType: 'linked-list',
+      items: buildItems(),
+      pointers: headPointer(list.length),
+    } as LinearScene,
   });
 
-  return steps;
+  const initialScene: LinearScene = {
+    type: 'linear',
+    structureType: 'linked-list',
+    items: [],
+    pointers: [{ index: -1, label: 'HEAD' }],
+  };
+
+  return { steps, initialScene };
 }

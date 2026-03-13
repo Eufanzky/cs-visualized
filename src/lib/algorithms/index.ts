@@ -1,4 +1,6 @@
-import type { AnimationStep } from '../animation-engine';
+import type { AnimationStep, RendererType, SceneState, StepResult } from '../animation-engine';
+export type { StepResult } from '../animation-engine';
+export { isStepResult } from '../animation-engine';
 import { generateBubbleSortSteps } from './bubble-sort';
 import { generateInsertionSortSteps } from './insertion-sort';
 import { generateMergeSortSteps } from './merge-sort';
@@ -20,7 +22,7 @@ import { generateLCSSteps } from './lcs';
 
 // ── Algorithm registry ────────────────────────────────────────────────────
 
-export type StepGenerator = (arr: number[]) => AnimationStep[];
+export type StepGenerator = (arr: number[]) => AnimationStep[] | StepResult;
 
 export interface AlgorithmMeta {
   id: string;
@@ -35,6 +37,8 @@ export interface AlgorithmMeta {
   spaceComplexity: string;
   stable: boolean;
   generateSteps: StepGenerator;
+  /** Which visual renderer to use for this algorithm */
+  rendererType: RendererType;
 }
 
 export const ALGORITHMS: Record<string, AlgorithmMeta> = {
@@ -49,6 +53,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(1)',
     stable: true,
     generateSteps: generateBubbleSortSteps,
+    rendererType: 'bar-chart',
   },
   'insertion-sort': {
     id: 'insertion-sort',
@@ -61,6 +66,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(1)',
     stable: true,
     generateSteps: generateInsertionSortSteps,
+    rendererType: 'bar-chart',
   },
   'merge-sort': {
     id: 'merge-sort',
@@ -73,6 +79,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(n)',
     stable: true,
     generateSteps: generateMergeSortSteps,
+    rendererType: 'bar-chart',
   },
   'quick-sort': {
     id: 'quick-sort',
@@ -85,6 +92,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(log n)',
     stable: false,
     generateSteps: generateQuickSortSteps,
+    rendererType: 'bar-chart',
   },
   'binary-search': {
     id: 'binary-search',
@@ -97,6 +105,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(1)',
     stable: true,
     generateSteps: generateBinarySearchSteps,
+    rendererType: 'bar-chart',
   },
   'stack': {
     id: 'stack',
@@ -109,6 +118,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(n)',
     stable: true,
     generateSteps: generateStackSteps,
+    rendererType: 'linear',
   },
   'queue': {
     id: 'queue',
@@ -121,6 +131,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(n)',
     stable: true,
     generateSteps: generateQueueSteps,
+    rendererType: 'linear',
   },
   'linked-list': {
     id: 'linked-list',
@@ -133,6 +144,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(n)',
     stable: true,
     generateSteps: generateLinkedListSteps,
+    rendererType: 'linear',
   },
   'dijkstra': {
     id: 'dijkstra',
@@ -145,6 +157,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(V)',
     stable: true,
     generateSteps: generateDijkstraSteps,
+    rendererType: 'graph',
   },
   'fibonacci': {
     id: 'fibonacci',
@@ -157,6 +170,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(n)',
     stable: true,
     generateSteps: generateFibonacciSteps,
+    rendererType: 'dp-grid',
   },
   'bfs': {
     id: 'bfs',
@@ -169,6 +183,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(V)',
     stable: true,
     generateSteps: generateBFSSteps,
+    rendererType: 'graph',
   },
   'dfs': {
     id: 'dfs',
@@ -181,6 +196,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(V)',
     stable: true,
     generateSteps: generateDFSSteps,
+    rendererType: 'graph',
   },
   'perceptron': {
     id: 'perceptron',
@@ -193,6 +209,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(features)',
     stable: true,
     generateSteps: generatePerceptronSteps,
+    rendererType: 'neuron',
   },
   'heap-sort': {
     id: 'heap-sort',
@@ -205,6 +222,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(1)',
     stable: false,
     generateSteps: generateHeapSortSteps,
+    rendererType: 'bar-chart',
   },
   'binary-tree': {
     id: 'binary-tree',
@@ -217,6 +235,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(n)',
     stable: true,
     generateSteps: generateBinaryTreeSteps,
+    rendererType: 'tree',
   },
   'hash-table': {
     id: 'hash-table',
@@ -229,6 +248,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(n)',
     stable: true,
     generateSteps: generateHashTableSteps,
+    rendererType: 'hash-table',
   },
   'knapsack': {
     id: 'knapsack',
@@ -241,6 +261,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(nW)',
     stable: true,
     generateSteps: generateKnapsackSteps,
+    rendererType: 'dp-grid',
   },
   'lcs': {
     id: 'lcs',
@@ -253,6 +274,7 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     spaceComplexity: 'O(mn)',
     stable: true,
     generateSteps: generateLCSSteps,
+    rendererType: 'dp-grid',
   },
 };
 

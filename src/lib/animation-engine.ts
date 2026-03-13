@@ -1,3 +1,150 @@
+// ── Renderer types ────────────────────────────────────────────────────────
+
+export type RendererType =
+  | 'bar-chart'
+  | 'graph'
+  | 'tree'
+  | 'linear'
+  | 'hash-table'
+  | 'dp-grid'
+  | 'neuron';
+
+// ── Scene state interfaces ────────────────────────────────────────────────
+
+export interface GraphNode {
+  id: number;
+  label: string;
+  x: number;
+  y: number;
+}
+
+export interface GraphEdge {
+  from: number;
+  to: number;
+  weight?: number;
+  highlighted?: boolean;
+}
+
+export interface GraphScene {
+  type: 'graph';
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  /** Map from node id → state string, e.g. 'visited', 'current', 'queued', 'finalized' */
+  nodeStates: Record<number, string>;
+  /** Optional distance labels per node id */
+  distanceLabels?: Record<number, string>;
+  /** Current queue or stack contents (node ids) */
+  queueOrStack?: number[];
+}
+
+export interface TreeNode {
+  id: number;
+  value: string;
+  x: number;
+  y: number;
+  left?: number;   // child node id
+  right?: number;  // child node id
+}
+
+export interface TreeScene {
+  type: 'tree';
+  nodes: TreeNode[];
+  edges: Array<{ from: number; to: number }>;
+  /** Node ids that are on the active traversal path */
+  activePathIds: number[];
+}
+
+export interface LinearItem {
+  value: string;
+  label?: string;
+  /** 'default' | 'active' | 'comparing' | 'inserted' | 'removed' */
+  state: string;
+}
+
+export interface LinearScene {
+  type: 'linear';
+  items: LinearItem[];
+  pointers?: Array<{ index: number; label: string }>;
+  /** 'stack' | 'queue' | 'linked-list' */
+  structureType: string;
+}
+
+export interface HashBucket {
+  index: number;
+  chain: Array<{ key: number | string; state: string }>;
+}
+
+export interface HashTableScene {
+  type: 'hash-table';
+  buckets: HashBucket[];
+  tableSize: number;
+  /** Highlighted bucket index during hash computation */
+  hashComputation?: { key: number | string; bucketIndex: number };
+}
+
+export interface DPCell {
+  row: number;
+  col: number;
+  value: string;
+  /** 'default' | 'computing' | 'computed' | 'highlight' | 'path' */
+  state: string;
+}
+
+export interface DPGridScene {
+  type: 'dp-grid';
+  grid: DPCell[][];
+  rowLabels?: string[];
+  colLabels?: string[];
+  highlightedCells?: Array<{ row: number; col: number }>;
+}
+
+export interface TrainingPoint {
+  x: number;
+  y: number;
+  label: number;
+}
+
+export interface NeuronScene {
+  type: 'neuron';
+  inputs: number[];
+  weights: number[];
+  bias: number;
+  weightedSum: number;
+  output: number;
+  /** Current training example index */
+  currentExample?: number;
+  /** Decision boundary parameters (for 2-input): w1*x + w2*y + b = 0 */
+  decisionBoundary?: { w1: number; w2: number; bias: number };
+  trainingPoints?: TrainingPoint[];
+}
+
+// ── Discriminated union ───────────────────────────────────────────────────
+
+export type SceneState =
+  | GraphScene
+  | TreeScene
+  | LinearScene
+  | HashTableScene
+  | DPGridScene
+  | NeuronScene;
+
+// ── Step result (scene-aware generators) ─────────────────────────────────
+
+/**
+ * Return type for scene-aware step generators.
+ * `initialScene` seeds `AnimationState.scene` before the first step is applied.
+ * Legacy generators return a plain `AnimationStep[]`.
+ */
+export interface StepResult {
+  steps: AnimationStep[];
+  initialScene: SceneState;
+}
+
+/** Type guard — narrows the union returned by a step generator */
+export function isStepResult(value: AnimationStep[] | StepResult): value is StepResult {
+  return !Array.isArray(value) && 'steps' in value && 'initialScene' in value;
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export interface AnimationStep {
@@ -5,6 +152,8 @@ export interface AnimationStep {
   indices: number[];
   values?: number[];
   description: string;
+  /** Optional scene state patch applied on top of the current scene */
+  sceneUpdate?: Partial<SceneState>;
 }
 
 export interface AnimationState {
@@ -19,6 +168,10 @@ export interface AnimationState {
   comparingIndices: number[];
   swappingIndices: number[];
   isDone: boolean;
+  /** Active renderer type (set from AlgorithmMeta). Defaults to 'bar-chart'. */
+  rendererType?: RendererType;
+  /** Current scene state for non-bar-chart renderers. Null for bar-chart mode. */
+  scene?: SceneState | null;
 }
 
 // ── Color palette ─────────────────────────────────────────────────────────
@@ -63,7 +216,11 @@ export function generateArray(size: number): number[] {
 
 // ── Initial state factory ─────────────────────────────────────────────────
 
-export function createInitialState(size = 24): AnimationState {
+export function createInitialState(
+  size = 24,
+  rendererType: RendererType = 'bar-chart',
+  scene: SceneState | null = null
+): AnimationState {
   return {
     array: generateArray(size),
     steps: [],
@@ -76,6 +233,8 @@ export function createInitialState(size = 24): AnimationState {
     comparingIndices: [],
     swappingIndices: [],
     isDone: false,
+    rendererType,
+    scene,
   };
 }
 
@@ -96,6 +255,11 @@ export function applyStep(
     currentStep: state.currentStep + 1,
   };
 
+  // Apply scene update if present (for non-bar-chart renderers)
+  if (step.sceneUpdate && state.scene) {
+    next.scene = { ...state.scene, ...step.sceneUpdate } as SceneState;
+  }
+
   switch (step.type) {
     case 'compare': {
       next.comparingIndices = step.indices;
@@ -105,10 +269,15 @@ export function applyStep(
     case 'swap': {
       next.swappingIndices = step.indices;
       next.swaps = state.swaps + 1;
-      const arr = [...state.array];
-      const [a, b] = step.indices;
-      [arr[a], arr[b]] = [arr[b], arr[a]];
-      next.array = arr;
+      // Swap array values for bar-chart renderer (or when rendererType is not set —
+      // e.g. legacy tests that construct AnimationState without the new fields).
+      const rt = state.rendererType;
+      if ((rt === 'bar-chart' || rt === undefined) && step.indices.length === 2) {
+        const arr = [...state.array];
+        const [a, b] = step.indices;
+        [arr[a], arr[b]] = [arr[b], arr[a]];
+        next.array = arr;
+      }
       break;
     }
     case 'sorted': {
@@ -132,9 +301,14 @@ export function applyStep(
 
 // ── Reset ─────────────────────────────────────────────────────────────────
 
-export function reset(size: number, speed: number): AnimationState {
+export function reset(
+  size: number,
+  speed: number,
+  rendererType: RendererType = 'bar-chart',
+  scene: SceneState | null = null
+): AnimationState {
   return {
-    ...createInitialState(size),
+    ...createInitialState(size, rendererType, scene),
     speed,
   };
 }

@@ -14,12 +14,14 @@ interface AnimationViewProps {
  * AnimationView
  *
  * Client boundary component that owns the animation lifecycle.
- * It looks up the algorithm by ID, wires up useAnimation, and renders
- * the canvas + controls. The parent server page handles all static content
- * (breadcrumbs, title, info panels) so they remain server-rendered.
+ * It looks up the algorithm by ID, wires up useAnimation (passing the
+ * algorithm's rendererType), and renders the canvas + controls.
+ * The parent server page handles all static content (breadcrumbs, title,
+ * info panels) so they remain server-rendered.
  */
 export function AnimationView({ algorithmId, initialSize = 24 }: AnimationViewProps) {
   const algo = getAlgorithm(algorithmId);
+  const rendererType = algo?.rendererType ?? 'bar-chart';
 
   const {
     state,
@@ -34,7 +36,8 @@ export function AnimationView({ algorithmId, initialSize = 24 }: AnimationViewPr
     algorithmId,
     // Fall back to a no-op generator if the algorithm isn't registered yet
     algo?.generateSteps ?? (() => []),
-    initialSize
+    initialSize,
+    rendererType
   );
 
   const canvasStatus = state.isDone
@@ -60,6 +63,7 @@ export function AnimationView({ algorithmId, initialSize = 24 }: AnimationViewPr
         onSizeChange={setSize}
         minSize={5}
         maxSize={100}
+        rendererType={rendererType}
       />
     </section>
   );

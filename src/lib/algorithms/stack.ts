@@ -1,101 +1,163 @@
-import type { AnimationStep } from '../animation-engine';
+import type { AnimationStep, LinearScene, LinearItem, StepResult } from '../animation-engine';
 
 /**
  * Generates the full ordered list of AnimationSteps for Stack (LIFO) operations.
  *
- * The visualisation encodes stack state as a number array where index 0 is the
- * bottom and the last element is the top.  The incoming `arr` parameter drives
- * the set of values that will be pushed/popped; the function derives an
- * operation sequence automatically.
+ * Returns { steps, initialScene } where initialScene is an empty LinearScene
+ * with structureType 'stack'. Every step carries a sceneUpdate that replaces
+ * the items array and updates the TOP pointer so the linear renderer always has
+ * a complete, accurate scene snapshot.
  *
- * Steps produced:
- *   - compare  → the top-of-stack element is highlighted (peek / pre-pop)
- *   - swap     → a push or pop mutation is happening
- *   - sorted   → an element has settled into its resting position on the stack
- *   - done     → the full operation sequence is complete
+ * Operation sequence:
+ *   - Push all values (up to 6) one by one
+ *   - Pop half of them back off
  */
-export function generateStackSteps(arr: number[]): AnimationStep[] {
+export function generateStackSteps(arr: number[]): StepResult {
   const steps: AnimationStep[] = [];
 
-  // We'll run a deterministic sequence of pushes and pops on the first
-  // few values from `arr`, so the animation has a fixed, readable story.
-  // Use at most 8 values to keep the demo concise.
-  const values = arr.slice(0, Math.min(8, arr.length));
-  const stack: number[] = [];
-
-  // Helper: display value as a rounded percentage string
+  // Cap at 6 values for a readable demo
+  const values = arr.slice(0, Math.min(6, arr.length));
   const fmt = (v: number) => Math.round(v * 100).toString();
 
-  // Build an operation list: push all values, then pop half of them
+  // Mutable logical stack (array of display strings)
+  const stack: string[] = [];
+
+  /** Build the LinearScene items snapshot from the current logical stack. */
+  function buildItems(enteringIdx?: number, leavingIdx?: number): LinearItem[] {
+    return stack.map((val, i) => {
+      if (leavingIdx !== undefined && i === leavingIdx) return { value: val, state: 'removed' };
+      if (enteringIdx !== undefined && i === enteringIdx) return { value: val, state: 'inserted' };
+      return { value: val, state: 'default' };
+    });
+  }
+
+  /** TOP pointer for the current stack length. index -1 when empty. */
+  function topPointer(len: number) {
+    return [{ index: len - 1, label: 'TOP' }];
+  }
+
   const pushCount = values.length;
   const popCount = Math.floor(pushCount / 2);
 
-  const operations: Array<{ op: 'push' | 'pop'; value?: number }> = [
-    ...values.map((v) => ({ op: 'push' as const, value: v })),
-    ...Array.from({ length: popCount }, () => ({ op: 'pop' as const })),
-  ];
+  // ── Push phase ──────────────────────────────────────────────────────────
+  for (let i = 0; i < pushCount; i++) {
+    const val = fmt(values[i]);
 
-  for (const { op, value } of operations) {
-    if (op === 'push' && value !== undefined) {
-      // Highlight current top before pushing
-      if (stack.length > 0) {
-        steps.push({
-          type: 'compare',
-          indices: [stack.length - 1],
-          description: `Stack top is currently ${fmt(stack[stack.length - 1])} — pushing ${fmt(value)} above it`,
-        });
-      }
-
-      // Push animation — the new element arrives at the top
-      steps.push({
-        type: 'swap',
-        indices: [stack.length],
-        values: [...stack, value],
-        description: `Pushing ${fmt(value)} onto the stack`,
-      });
-      stack.push(value);
-
-      // Settle the newly pushed element
-      steps.push({
-        type: 'sorted',
-        indices: [stack.length - 1],
-        description: `${fmt(value)} is now at the top of the stack (size = ${stack.length})`,
-      });
-    } else if (op === 'pop' && stack.length > 0) {
-      const top = stack[stack.length - 1];
-
-      // Highlight top before popping
+    // Highlight current top before pushing (skip on empty stack)
+    if (stack.length > 0) {
       steps.push({
         type: 'compare',
         indices: [stack.length - 1],
-        description: `Peeking at top element ${fmt(top)} before popping`,
+        description: `Stack TOP is ${stack[stack.length - 1]} — pushing ${val} above it`,
+        sceneUpdate: {
+          type: 'linear',
+          structureType: 'stack',
+          items: buildItems(undefined, undefined).map((item, idx) =>
+            idx === stack.length - 1 ? { ...item, state: 'active' } : item
+          ),
+          pointers: topPointer(stack.length),
+        } as LinearScene,
       });
-
-      // Pop animation
-      steps.push({
-        type: 'swap',
-        indices: [stack.length - 1],
-        values: stack.slice(0, -1),
-        description: `Popping ${fmt(top)} from the stack`,
-      });
-      stack.pop();
-
-      if (stack.length > 0) {
-        // Mark new top as settled
-        steps.push({
-          type: 'sorted',
-          indices: [stack.length - 1],
-          description: `${fmt(stack[stack.length - 1])} is now the new top (size = ${stack.length})`,
-        });
-      }
     }
+
+    // Push: add item with 'entering' state
+    stack.push(val);
+    steps.push({
+      type: 'swap',
+      indices: [stack.length - 1],
+      description: `Pushing ${val} onto the stack`,
+      sceneUpdate: {
+        type: 'linear',
+        structureType: 'stack',
+        items: buildItems(stack.length - 1),
+        pointers: topPointer(stack.length),
+      } as LinearScene,
+    });
+
+    // Settle — item becomes idle
+    steps.push({
+      type: 'sorted',
+      indices: [stack.length - 1],
+      description: `${val} is now at the top of the stack (size = ${stack.length})`,
+      sceneUpdate: {
+        type: 'linear',
+        structureType: 'stack',
+        items: buildItems(),
+        pointers: topPointer(stack.length),
+      } as LinearScene,
+    });
+  }
+
+  // ── Pop phase ───────────────────────────────────────────────────────────
+  for (let i = 0; i < popCount; i++) {
+    if (stack.length === 0) break;
+    const top = stack[stack.length - 1];
+
+    // Highlight top before popping
+    steps.push({
+      type: 'compare',
+      indices: [stack.length - 1],
+      description: `Peeking at TOP element ${top} before popping`,
+      sceneUpdate: {
+        type: 'linear',
+        structureType: 'stack',
+        items: buildItems().map((item, idx) =>
+          idx === stack.length - 1 ? { ...item, state: 'active' } : item
+        ),
+        pointers: topPointer(stack.length),
+      } as LinearScene,
+    });
+
+    // Mark as leaving
+    steps.push({
+      type: 'swap',
+      indices: [stack.length - 1],
+      description: `Popping ${top} from the stack`,
+      sceneUpdate: {
+        type: 'linear',
+        structureType: 'stack',
+        items: buildItems(undefined, stack.length - 1),
+        pointers: topPointer(stack.length),
+      } as LinearScene,
+    });
+
+    stack.pop();
+
+    // Scene after removal
+    steps.push({
+      type: 'sorted',
+      indices: stack.length > 0 ? [stack.length - 1] : [],
+      description:
+        stack.length > 0
+          ? `${stack[stack.length - 1]} is now the new TOP (size = ${stack.length})`
+          : 'Stack is now empty',
+      sceneUpdate: {
+        type: 'linear',
+        structureType: 'stack',
+        items: buildItems(),
+        pointers: topPointer(stack.length),
+      } as LinearScene,
+    });
   }
 
   steps.push({
     type: 'done',
     indices: [],
     description: 'Stack operation sequence complete',
+    sceneUpdate: {
+      type: 'linear',
+      structureType: 'stack',
+      items: buildItems(),
+      pointers: topPointer(stack.length),
+    } as LinearScene,
   });
 
-  return steps;
+  const initialScene: LinearScene = {
+    type: 'linear',
+    structureType: 'stack',
+    items: [],
+    pointers: [{ index: -1, label: 'TOP' }],
+  };
+
+  return { steps, initialScene };
 }

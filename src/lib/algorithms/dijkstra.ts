@@ -1,26 +1,29 @@
-import type { AnimationStep } from '../animation-engine';
+import type { AnimationStep, GraphEdge, GraphNode, GraphScene, StepResult } from '../animation-engine';
 
 /**
- * Generates AnimationSteps for Dijkstra's shortest-path algorithm.
+ * Generates animation steps and an initial GraphScene for Dijkstra's
+ * shortest-path algorithm on a fixed 7-node weighted graph.
  *
- * A fixed 7-node weighted graph is used. The `arr` parameter seeds which
- * node is chosen as the source (arr.length % nodeCount).
+ * Node layout (normalized 0–1 coordinates):
  *
- * Steps produced:
- *   - compare  → visiting a node or examining a neighbor edge
- *   - swap     → relaxing an edge (updating a tentative distance)
- *   - sorted   → a node has been finalized (shortest path confirmed)
- *   - done     → all reachable nodes finalized
+ *        A(0)
+ *       / \
+ *      B   C
+ *     / \ / \
+ *    D   E   F
+ *         \ /
+ *          G
+ *
+ * Returns { steps, initialScene } so useAnimation can seed the graph renderer.
  */
 
-interface Edge {
+interface InternalEdge {
   to: number;
   weight: number;
 }
 
-// A small, hand-crafted 7-node weighted undirected graph.
-// Nodes are labeled 0–6 (rendered as A–G).
-const GRAPH: Edge[][] = [
+// Fixed 7-node weighted undirected graph — adjacency list
+const ADJACENCY: InternalEdge[][] = [
   /* 0(A) */ [{ to: 1, weight: 4 }, { to: 2, weight: 2 }],
   /* 1(B) */ [{ to: 0, weight: 4 }, { to: 2, weight: 5 }, { to: 3, weight: 10 }],
   /* 2(C) */ [{ to: 0, weight: 2 }, { to: 1, weight: 5 }, { to: 4, weight: 3 }],
@@ -32,86 +35,213 @@ const GRAPH: Edge[][] = [
 
 const NODE_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
-export function generateDijkstraSteps(arr: number[]): AnimationStep[] {
-  const steps: AnimationStep[] = [];
-  const n = GRAPH.length;
+// Normalized (0–1) positions — visually pleasing layout:
+//   A at top-centre, B/C in the second row, D/E/F in the third, G at bottom-right
+const NODE_POSITIONS: Array<{ x: number; y: number }> = [
+  { x: 0.50, y: 0.08 }, // 0: A  — top centre
+  { x: 0.22, y: 0.38 }, // 1: B  — mid-left
+  { x: 0.72, y: 0.30 }, // 2: C  — mid-right
+  { x: 0.10, y: 0.70 }, // 3: D  — lower-left
+  { x: 0.50, y: 0.62 }, // 4: E  — lower-centre
+  { x: 0.80, y: 0.70 }, // 5: F  — lower-right
+  { x: 0.65, y: 0.92 }, // 6: G  — bottom-right
+];
 
-  // Seed source node from arr length so different array sizes give different starts
+// Build the canonical undirected edge list (each pair once, from < to)
+const GRAPH_EDGES: GraphEdge[] = [
+  { from: 0, to: 1, weight: 4 },
+  { from: 0, to: 2, weight: 2 },
+  { from: 1, to: 2, weight: 5 },
+  { from: 1, to: 3, weight: 10 },
+  { from: 2, to: 4, weight: 3 },
+  { from: 3, to: 4, weight: 4 },
+  { from: 3, to: 5, weight: 11 },
+  { from: 4, to: 5, weight: 6 },
+  { from: 4, to: 6, weight: 8 },
+  { from: 5, to: 6, weight: 7 },
+];
+
+const GRAPH_NODES: GraphNode[] = NODE_LABELS.map((label, i) => ({
+  id: i,
+  label,
+  x: NODE_POSITIONS[i].x,
+  y: NODE_POSITIONS[i].y,
+}));
+
+/** Find the canonical edge index for (u,v) regardless of direction. */
+function findEdgeIdx(u: number, v: number): number {
+  return GRAPH_EDGES.findIndex(
+    e => (e.from === u && e.to === v) || (e.from === v && e.to === u)
+  );
+}
+
+/** Produce an edges array with exactly one edge highlighted, rest not. */
+function edgesWithHighlight(highlightedEdgeIdx: number): GraphEdge[] {
+  return GRAPH_EDGES.map((e, i) => ({ ...e, highlighted: i === highlightedEdgeIdx }));
+}
+
+/** Produce an edges array with no highlighted edges. */
+function edgesNoHighlight(): GraphEdge[] {
+  return GRAPH_EDGES.map(e => ({ ...e, highlighted: false }));
+}
+
+/** Format a distance value for display. */
+function fmtDist(d: number): string {
+  return d === Infinity ? '∞' : String(d);
+}
+
+export function generateDijkstraSteps(arr: number[]): StepResult {
+  const n = ADJACENCY.length;
   const source = arr.length > 0 ? arr.length % n : 0;
 
   const dist: number[] = Array(n).fill(Infinity);
-  const visited: boolean[] = Array(n).fill(false);
+  const finalized: boolean[] = Array(n).fill(false);
   dist[source] = 0;
 
+  const steps: AnimationStep[] = [];
+
+  // Helpers that build nodeStates and distanceLabels snapshots
+  const nodeStates = (): Record<number, string> => {
+    const s: Record<number, string> = {};
+    for (let i = 0; i < n; i++) {
+      s[i] = finalized[i] ? 'finalized' : 'unvisited';
+    }
+    return s;
+  };
+
+  const distLabels = (): Record<number, string> => {
+    const d: Record<number, string> = {};
+    for (let i = 0; i < n; i++) d[i] = fmtDist(dist[i]);
+    return d;
+  };
+
+  // ── Initial step: show the starting state ──────────────────────────────
   steps.push({
     type: 'compare',
     indices: [source],
-    description: `Starting Dijkstra from node ${NODE_LABELS[source]} — initializing distances to ∞, d[${NODE_LABELS[source]}] = 0`,
+    description: `Starting Dijkstra from node ${NODE_LABELS[source]} — d[${NODE_LABELS[source]}]=0, all others ∞`,
+    sceneUpdate: {
+      type: 'graph',
+      nodes: GRAPH_NODES,
+      edges: edgesNoHighlight(),
+      nodeStates: { ...nodeStates(), [source]: 'visiting' },
+      distanceLabels: distLabels(),
+      queueOrStack: [source],
+    } as GraphScene,
   });
 
   for (let iter = 0; iter < n; iter++) {
-    // Pick the unvisited node with the smallest tentative distance
+    // Pick unvisited node with smallest tentative distance
     let u = -1;
     let minDist = Infinity;
     for (let i = 0; i < n; i++) {
-      if (!visited[i] && dist[i] < minDist) {
+      if (!finalized[i] && dist[i] < minDist) {
         minDist = dist[i];
         u = i;
       }
     }
+    if (u === -1) break;
 
-    if (u === -1) break; // All remaining nodes are unreachable
-
-    visited[u] = true;
-
+    // Show: visiting node u
     steps.push({
       type: 'compare',
       indices: [u],
-      description: `Visiting node ${NODE_LABELS[u]} (distance ${dist[u]}) — checking all neighbors`,
+      description: `Visiting node ${NODE_LABELS[u]} (d=${dist[u]}) — checking all neighbors`,
+      sceneUpdate: {
+        type: 'graph',
+        nodes: GRAPH_NODES,
+        edges: edgesNoHighlight(),
+        nodeStates: { ...nodeStates(), [u]: 'visiting' },
+        distanceLabels: distLabels(),
+        queueOrStack: undefined,
+      } as GraphScene,
     });
 
     // Relax each outgoing edge from u
-    for (const edge of GRAPH[u]) {
+    for (const edge of ADJACENCY[u]) {
       const v = edge.to;
-      if (visited[v]) continue;
+      if (finalized[v]) continue;
 
       const newDist = dist[u] + edge.weight;
+      const edgeIdx = findEdgeIdx(u, v);
 
+      // Show: examining edge u→v
       steps.push({
         type: 'compare',
         indices: [u, v],
-        description: `Examining edge ${NODE_LABELS[u]}→${NODE_LABELS[v]} (weight ${edge.weight}): current d[${NODE_LABELS[v]}] = ${dist[v] === Infinity ? '∞' : dist[v]}, candidate = ${dist[u]} + ${edge.weight} = ${newDist}`,
+        description: `Examining ${NODE_LABELS[u]}→${NODE_LABELS[v]} (w=${edge.weight}): d[${NODE_LABELS[v]}]=${fmtDist(dist[v])}, candidate=${dist[u]}+${edge.weight}=${newDist}`,
+        sceneUpdate: {
+          type: 'graph',
+          nodes: GRAPH_NODES,
+          edges: edgesWithHighlight(edgeIdx),
+          nodeStates: { ...nodeStates(), [u]: 'visiting', [v]: 'queued' },
+          distanceLabels: distLabels(),
+          queueOrStack: undefined,
+        } as GraphScene,
       });
 
       if (newDist < dist[v]) {
+        dist[v] = newDist;
+
+        // Show: relaxation — update distance label in gold
         steps.push({
           type: 'swap',
           indices: [u, v],
           values: [dist[v], newDist],
-          description: `Relaxing edge ${NODE_LABELS[u]}→${NODE_LABELS[v]}: d[${NODE_LABELS[v]}] updated from ${dist[v] === Infinity ? '∞' : dist[v]} to ${newDist}`,
+          description: `Relaxing ${NODE_LABELS[u]}→${NODE_LABELS[v]}: d[${NODE_LABELS[v]}] updated to ${newDist}`,
+          sceneUpdate: {
+            type: 'graph',
+            nodes: GRAPH_NODES,
+            edges: edgesWithHighlight(edgeIdx),
+            nodeStates: { ...nodeStates(), [u]: 'visiting', [v]: 'queued' },
+            distanceLabels: distLabels(),
+            queueOrStack: undefined,
+          } as GraphScene,
         });
-        dist[v] = newDist;
       }
     }
 
-    // Node u is finalized
+    // Finalize node u
+    finalized[u] = true;
     steps.push({
       type: 'sorted',
       indices: [u],
-      description: `Node ${NODE_LABELS[u]} finalized — shortest path from ${NODE_LABELS[source]} to ${NODE_LABELS[u]} = ${dist[u]}`,
+      description: `Node ${NODE_LABELS[u]} finalized — shortest path from ${NODE_LABELS[source]} = ${dist[u]}`,
+      sceneUpdate: {
+        type: 'graph',
+        nodes: GRAPH_NODES,
+        edges: edgesNoHighlight(),
+        nodeStates: nodeStates(),
+        distanceLabels: distLabels(),
+        queueOrStack: undefined,
+      } as GraphScene,
     });
   }
 
-  // Report final distances
-  const summary = NODE_LABELS.map((lbl, i) =>
-    `${lbl}:${dist[i] === Infinity ? '∞' : dist[i]}`
-  ).join(', ');
-
+  // Done
+  const summary = NODE_LABELS.map((lbl, i) => `${lbl}:${fmtDist(dist[i])}`).join('  ');
   steps.push({
     type: 'done',
     indices: [],
-    description: `Dijkstra complete from ${NODE_LABELS[source]}. Shortest distances — ${summary}`,
+    description: `Dijkstra complete from ${NODE_LABELS[source]}. Distances — ${summary}`,
+    sceneUpdate: {
+      type: 'graph',
+      nodes: GRAPH_NODES,
+      edges: edgesNoHighlight(),
+      nodeStates: nodeStates(),
+      distanceLabels: distLabels(),
+      queueOrStack: undefined,
+    } as GraphScene,
   });
 
-  return steps;
+  const initialScene: GraphScene = {
+    type: 'graph',
+    nodes: GRAPH_NODES,
+    edges: edgesNoHighlight(),
+    nodeStates: Object.fromEntries(Array.from({ length: n }, (_, i) => [i, 'unvisited'])),
+    distanceLabels: Object.fromEntries(Array.from({ length: n }, (_, i) => [i, i === source ? '0' : '∞'])),
+    queueOrStack: undefined,
+  };
+
+  return { steps, initialScene };
 }

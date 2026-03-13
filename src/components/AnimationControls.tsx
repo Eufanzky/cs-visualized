@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AnimationState } from '../lib/animation-engine';
+import { AnimationState, type RendererType } from '../lib/animation-engine';
 
 interface AnimationControlsProps {
   state: AnimationState;
@@ -14,6 +14,8 @@ interface AnimationControlsProps {
   onSizeChange: (size: number) => void;
   minSize?: number;
   maxSize?: number;
+  /** Controls Size slider visibility and stat label wording */
+  rendererType?: RendererType;
 }
 
 // ── SVG Icons ──────────────────────────────────────────────────────────────
@@ -330,6 +332,18 @@ function StatPill({
  *   ArrowRight  → Step forward
  *   R           → Reset
  */
+// ── Renderer-specific stat labels ─────────────────────────────────────────
+
+const RENDERER_STAT_LABELS: Record<string, { primary: string; primaryFull: string; secondary: string; secondaryFull: string }> = {
+  'bar-chart':  { primary: 'cmp',   primaryFull: 'comparisons', secondary: 'swp',  secondaryFull: 'swaps' },
+  'graph':      { primary: 'nodes', primaryFull: 'nodes visited', secondary: 'edges', secondaryFull: 'edges relaxed' },
+  'tree':       { primary: 'nodes', primaryFull: 'nodes visited', secondary: 'ins',   secondaryFull: 'insertions' },
+  'linear':     { primary: 'ops',   primaryFull: 'operations',   secondary: 'moves', secondaryFull: 'moves' },
+  'hash-table': { primary: 'ins',   primaryFull: 'insertions',   secondary: 'coll',  secondaryFull: 'collisions' },
+  'dp-grid':    { primary: 'cells', primaryFull: 'cells computed', secondary: 'hits',  secondaryFull: 'cache hits' },
+  'neuron':     { primary: 'epoch', primaryFull: 'examples seen', secondary: 'err',   secondaryFull: 'mispredictions' },
+};
+
 export function AnimationControls({
   state,
   onPlay,
@@ -340,10 +354,12 @@ export function AnimationControls({
   onSizeChange,
   minSize = 5,
   maxSize = 100,
+  rendererType = 'bar-chart',
 }: AnimationControlsProps) {
   const { isPlaying, isDone, speed, array, comparisons, swaps, currentStep, steps } =
     state;
 
+  const isBarChart = rendererType === 'bar-chart';
   const arraySize = array.length;
 
   const sliderSpeedValue = Math.round(speed * 4);
@@ -355,16 +371,20 @@ export function AnimationControls({
 
   const stepDisplay = totalSteps > 0 ? `${currentStep}/${totalSteps}` : '—';
 
+  const statLabels = RENDERER_STAT_LABELS[rendererType] ?? RENDERER_STAT_LABELS['bar-chart'];
+
   // Derive a human-readable status string for the aria-live region
   let liveStatus: string;
   if (isDone) {
-    liveStatus = `Animation complete. ${comparisons} comparisons, ${swaps} swaps in ${totalSteps} steps.`;
+    liveStatus = `Animation complete. ${comparisons} ${statLabels.primaryFull}, ${swaps} ${statLabels.secondaryFull} in ${totalSteps} steps.`;
   } else if (isPlaying) {
     liveStatus = `Playing — step ${currentStep} of ${totalSteps}.`;
   } else if (currentStep > 0) {
-    liveStatus = `Paused at step ${currentStep} of ${totalSteps}. ${comparisons} comparisons, ${swaps} swaps so far.`;
-  } else {
+    liveStatus = `Paused at step ${currentStep} of ${totalSteps}. ${comparisons} ${statLabels.primaryFull}, ${swaps} ${statLabels.secondaryFull} so far.`;
+  } else if (isBarChart) {
     liveStatus = `Ready. Array size: ${arraySize}. Press Space to play or Right Arrow to step.`;
+  } else {
+    liveStatus = `Ready. Press Space to play or Right Arrow to step.`;
   }
 
   // ── Global keyboard shortcuts ──────────────────────────────────────────
@@ -455,27 +475,30 @@ export function AnimationControls({
         onChange={v => onSpeedChange(v / 4)}
       />
 
-      <Separator />
-
-      {/* Size slider */}
-      <Slider
-        label="Size"
-        ariaLabel="Array size"
-        value={arraySize}
-        min={minSize}
-        max={maxSize}
-        step={1}
-        fillPercent={sizeFillPct}
-        onChange={onSizeChange}
-      />
+      {/* Size slider — only shown for bar-chart (array-based) renderers */}
+      {isBarChart && (
+        <>
+          <Separator />
+          <Slider
+            label="Size"
+            ariaLabel="Array size"
+            value={arraySize}
+            min={minSize}
+            max={maxSize}
+            step={1}
+            fillPercent={sizeFillPct}
+            onChange={onSizeChange}
+          />
+        </>
+      )}
 
       <Separator />
 
       {/* Stats as pill badges */}
       <div className="flex items-center gap-1.5" aria-label="Animation statistics">
         <StatPill label="step" fullLabel="step" value={stepDisplay} color="text-[#908caa]" />
-        <StatPill label="cmp" fullLabel="comparisons" value={comparisons} color="text-[#c4a7e7]" />
-        <StatPill label="swp" fullLabel="swaps" value={swaps} color="text-[#f6c177]" />
+        <StatPill label={statLabels.primary} fullLabel={statLabels.primaryFull} value={comparisons} color="text-[#c4a7e7]" />
+        <StatPill label={statLabels.secondary} fullLabel={statLabels.secondaryFull} value={swaps} color="text-[#f6c177]" />
       </div>
 
       {/* Keyboard hint — visually subtle, sr-accessible */}
