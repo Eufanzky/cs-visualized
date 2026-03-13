@@ -81,6 +81,17 @@ body {
   overflow-x: hidden;
 }
 
+/* ── Ambient background canvas ── */
+#ambientBg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+}
+
 /* ── Noise overlay ── */
 body::before {
   content: '';
@@ -174,6 +185,7 @@ a {
 
 .hero {
   position: relative;
+  z-index: 2;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -181,7 +193,6 @@ a {
   padding: 120px 2rem 80px;
   max-width: var(--max-width);
   margin: 0 auto;
-  overflow: hidden;
 }
 
 /* ── Animated ambient orbs ── */
@@ -333,20 +344,9 @@ a {
   text-shadow: 0 0 20px rgba(203, 178, 237, 0.25);
 }
 
-/* ── Hero background grid ── */
+/* ── Hero background grid (replaced by ambient canvas) ── */
 .hero__grid {
-  position: absolute;
-  top: 0;
-  right: -10%;
-  width: 65%;
-  height: 100%;
-  z-index: 0;
-  /* Dot grid — warm, soft */
-  background-image: radial-gradient(circle, rgba(122, 116, 148, 0.30) 1px, transparent 1px);
-  background-size: 40px 40px;
-  mask-image: radial-gradient(ellipse at 70% 50%, black 10%, transparent 65%);
-  -webkit-mask-image: radial-gradient(ellipse at 70% 50%, black 10%, transparent 65%);
-  animation: gridFade 6s ease-in-out infinite alternate;
+  display: none;
 }
 
 /* ── Decorative code bracket — top-right corner ── */
@@ -376,6 +376,7 @@ a {
   max-width: var(--max-width);
   margin: 0 auto;
   position: relative;
+  z-index: 2;
 }
 
 /* ── Gradient section divider ── */
@@ -1019,6 +1020,7 @@ a {
   /* Gradient border top */
   border: none;
   position: relative;
+  z-index: 2;
   font-family: var(--font-mono);
   font-size: 0.7rem;
   color: var(--text-muted);
