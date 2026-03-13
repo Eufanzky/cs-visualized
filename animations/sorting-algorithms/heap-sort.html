@@ -15,6 +15,14 @@
     <ul class="nav__links">
       <li><a href="../../index.html#categories">Browse</a></li>
     </ul>
+    <div class="nav__music">
+      <button class="nav__music-btn" id="musicToggle" title="Play lofi music">
+        <div class="nav__music-bars">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        lofi
+      </button>
+    </div>
   </nav>
 
   <div class="animation-page">
@@ -40,6 +48,8 @@
       <button class="controls__btn controls__btn--primary" id="btnPlay">▶ Play</button>
       <button class="controls__btn" id="btnStep">Step</button>
       <button class="controls__btn" id="btnReset">Reset</button>
+      <div class="controls__separator"></div>
+      <button class="controls__btn controls__btn--sound" id="btnSound" title="Toggle sound">&#9834;</button>
       <div class="controls__separator"></div>
       <span class="controls__label">Speed</span>
       <input type="range" class="controls__slider" id="speedSlider" min="1" max="100" value="50">
@@ -74,6 +84,7 @@
     cs_animations — built for learning
   </footer>
 
+  <script src="../../js/sounds.js"></script>
   <script>
   (function () {
     // ── State ──
@@ -93,14 +104,14 @@
 
     // ── Colors ──
     const COLORS = {
-      bar:        '#3d3656',
-      barTop:     '#4e4568',
-      comparing:  '#cbb2ed',
-      swapping:   '#f7cc93',
-      sorted:     '#b3e4a5',
-      text:       '#e8e4f0',
-      textMuted:  '#7a7494',
-      bg:         '#191623',
+      bar:        '#4a403a',
+      barTop:     '#5a4e46',
+      comparing:  '#c8a4d4',
+      swapping:   '#e4c08a',
+      sorted:     '#9cc49a',
+      text:       '#ede6db',
+      textMuted:  '#8a7e74',
+      bg:         '#231f1c',
     };
 
     // ── Canvas sizing ──
@@ -286,6 +297,7 @@
 
     // ── Execute a single step ──
     function executeStep(step) {
+      LofiSounds.step(step);
       return new Promise(resolve => {
         if (step.type === 'compare') {
           comparingIndices = step.indices;
@@ -412,6 +424,14 @@
     resize();
     generateArray(n);
   })();
+  </script>
+  <script src="../../js/lofi-music.js"></script>
+  <script>
+    document.getElementById('musicToggle').addEventListener('click', function () {
+      var on = LofiMusic.toggle();
+      this.classList.toggle('is-playing', on);
+      this.title = on ? 'Stop lofi music' : 'Play lofi music';
+    });
   </script>
 </body>
 </html>

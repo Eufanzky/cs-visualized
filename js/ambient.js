@@ -8,14 +8,14 @@
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
-  // Palette — translucent versions of the syntax colors
+  // Palette — warm lofi tones
   const COLORS = [
-    { r: 203, g: 178, b: 237 }, // lavender
-    { r: 240, g: 198, b: 195 }, // soft rose
-    { r: 168, g: 216, b: 223 }, // soft teal
-    { r: 247, g: 204, b: 147 }, // warm gold
-    { r: 240, g: 173, b: 169 }, // soft coral
-    { r: 179, g: 228, b: 165 }, // soft green
+    { r: 200, g: 164, b: 212 }, // dusty lilac
+    { r: 232, g: 180, b: 168 }, // warm peach
+    { r: 228, g: 192, b: 138 }, // amber
+    { r: 212, g: 150, b: 142 }, // terracotta
+    { r: 156, g: 196, b: 154 }, // soft sage
+    { r: 184, g: 169, b: 154 }, // warm taupe
   ];
 
   let particles = [];

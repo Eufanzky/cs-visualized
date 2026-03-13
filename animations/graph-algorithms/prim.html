@@ -15,6 +15,14 @@
     <ul class="nav__links">
       <li><a href="../../index.html#categories">Browse</a></li>
     </ul>
+    <div class="nav__music">
+      <button class="nav__music-btn" id="musicToggle" title="Play lofi music">
+        <div class="nav__music-bars">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        lofi
+      </button>
+    </div>
   </nav>
 
   <div class="animation-page">
@@ -40,6 +48,8 @@
       <button class="controls__btn controls__btn--primary" id="btnPlay">&#9654; Start</button>
       <button class="controls__btn" id="btnStep">Step</button>
       <button class="controls__btn" id="btnReset">Reset</button>
+      <div class="controls__separator"></div>
+      <button class="controls__btn controls__btn--sound" id="btnSound" title="Toggle sound">&#9834;</button>
       <div class="controls__separator"></div>
       <span class="controls__label">Speed</span>
       <input type="range" class="controls__slider" id="speedSlider" min="1" max="100" value="50">
@@ -72,6 +82,7 @@
     cs_animations — built for learning
   </footer>
 
+  <script src="../../js/sounds.js"></script>
   <script>
   (function () {
     const canvas = document.getElementById('canvas');
@@ -88,18 +99,18 @@
     const NUM_NODES = 9;
 
     const COLORS = {
-      primary:   '#cbb2ed',
-      secondary: '#a8d8df',
-      accent:    '#f7cc93',
-      success:   '#b3e4a5',
-      error:     '#ef8aa6',
-      text:      '#e8e4f0',
-      textMuted: '#7a7494',
-      bg:        '#191623',
-      surface:   '#221e30',
-      border:    '#362f4a',
-      node:      '#3d3656',
-      edge:      '#362f4a',
+      primary:   '#c8a4d4',
+      secondary: '#8fbfb0',
+      accent:    '#e4c08a',
+      success:   '#9cc49a',
+      error:     '#d48a8a',
+      text:      '#ede6db',
+      textMuted: '#8a7e74',
+      bg:        '#231f1c',
+      surface:   '#2d2824',
+      border:    '#4a403a',
+      node:      '#4a403a',
+      edge:      '#4a403a',
     };
 
     function resize() {
@@ -340,6 +351,7 @@
     }
 
     function executeStep(step) {
+      LofiSounds.step(step);
       return new Promise(resolve => {
         if (step.type === 'add-to-mst') {
           nodeStates[step.node] = 'mst';
@@ -457,6 +469,14 @@
     resize();
     generateGraph();
   })();
+  </script>
+  <script src="../../js/lofi-music.js"></script>
+  <script>
+    document.getElementById('musicToggle').addEventListener('click', function () {
+      var on = LofiMusic.toggle();
+      this.classList.toggle('is-playing', on);
+      this.title = on ? 'Stop lofi music' : 'Play lofi music';
+    });
   </script>
 </body>
 </html>

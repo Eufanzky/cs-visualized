@@ -15,6 +15,14 @@
     <ul class="nav__links">
       <li><a href="../../index.html#categories">Browse</a></li>
     </ul>
+    <div class="nav__music">
+      <button class="nav__music-btn" id="musicToggle" title="Play lofi music">
+        <div class="nav__music-bars">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        lofi
+      </button>
+    </div>
   </nav>
 
   <div class="animation-page">
@@ -41,6 +49,8 @@
       <button class="controls__btn" id="btnDelete">− Delete</button>
       <button class="controls__btn" id="btnAccess">Access</button>
       <button class="controls__btn" id="btnReset">Reset</button>
+      <div class="controls__separator"></div>
+      <button class="controls__btn controls__btn--sound" id="btnSound" title="Toggle sound">&#9834;</button>
       <div class="controls__separator"></div>
       <span class="controls__label">Speed</span>
       <input type="range" class="controls__slider" id="speedSlider" min="1" max="100" value="50">
@@ -73,22 +83,23 @@
     cs_animations — built for learning
   </footer>
 
+  <script src="../../js/sounds.js"></script>
   <script>
   (function () {
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
 
     const COLORS = {
-      primary:   '#cbb2ed',
-      secondary: '#f0c6c3',
-      accent:    '#f7cc93',
-      highlight: '#a8d8df',
-      success:   '#b3e4a5',
-      text:      '#e8e4f0',
-      textMuted: '#7a7494',
-      bg:        '#191623',
-      surface:   '#221e30',
-      border:    '#362f4a',
+      primary:   '#c8a4d4',
+      secondary: '#e8b4a8',
+      accent:    '#e4c08a',
+      highlight: '#8fbfb0',
+      success:   '#9cc49a',
+      text:      '#ede6db',
+      textMuted: '#8a7e74',
+      bg:        '#231f1c',
+      surface:   '#2d2824',
+      border:    '#4a403a',
     };
 
     let arr = [];
@@ -263,6 +274,7 @@
     }
 
     async function animateInsert() {
+      LofiSounds.init(); LofiSounds.insert(0.5);
       if (animating || arr.length >= maxSize) return;
       animating = true;
       const val = Math.floor(Math.random() * 99) + 1;
@@ -281,6 +293,7 @@
     }
 
     async function animateDelete() {
+      LofiSounds.init(); LofiSounds.remove();
       if (animating || arr.length === 0) return;
       animating = true;
       deletingIndex = arr.length - 1;
@@ -302,6 +315,7 @@
     }
 
     async function animateAccess() {
+      LofiSounds.init(); LofiSounds.visit(0.5);
       if (animating || arr.length === 0) return;
       animating = true;
       const idx = Math.floor(Math.random() * arr.length);
@@ -342,6 +356,14 @@
     resize();
     generateArray();
   })();
+  </script>
+  <script src="../../js/lofi-music.js"></script>
+  <script>
+    document.getElementById('musicToggle').addEventListener('click', function () {
+      var on = LofiMusic.toggle();
+      this.classList.toggle('is-playing', on);
+      this.title = on ? 'Stop lofi music' : 'Play lofi music';
+    });
   </script>
 </body>
 </html>
