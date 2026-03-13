@@ -102,6 +102,7 @@
     let sortedIndices = new Set();
     let comparingIndices = [];
     let swappingIndices = [];
+    let insertingIndex = -1;   // the element currently being inserted
 
     // ── Colors ──
     const COLORS = {
@@ -222,7 +223,9 @@
       ctx.textAlign = 'left';
 
       let status = 'ready';
-      if (sorting) status = 'sorting...';
+      if (sorting) {
+        status = insertingIndex >= 0 ? `inserting element [${insertingIndex}]` : 'sorting...';
+      }
       if (sortedIndices.size === n) status = 'sorted ✓';
 
       ctx.fillText(`n=${n}  |  ${status}`, padding, 24);
@@ -231,7 +234,7 @@
         ctx.fillStyle = COLORS.comparing;
         ctx.textAlign = 'right';
         ctx.fillText(
-          `comparing [${comparingIndices[0]}] & [${comparingIndices[1]}]`,
+          `is [${comparingIndices[1]}] < [${comparingIndices[0]}]?`,
           w - padding, 24
         );
       }
@@ -239,7 +242,7 @@
         ctx.fillStyle = COLORS.swapping;
         ctx.textAlign = 'right';
         ctx.fillText(
-          `swapping [${swappingIndices[0]}] ↔ [${swappingIndices[1]}]`,
+          `shifting [${swappingIndices[0]}] right`,
           w - padding, 24
         );
       }
@@ -254,6 +257,7 @@
       steps.push({ type: 'sorted', index: 0 });
 
       for (let i = 1; i < len; i++) {
+        steps.push({ type: 'insert-start', index: i });
         let j = i;
         while (j > 0) {
           steps.push({ type: 'compare', indices: [j - 1, j] });
@@ -278,7 +282,11 @@
     function executeStep(step) {
       LofiSounds.step(step);
       return new Promise(resolve => {
-        if (step.type === 'compare') {
+        if (step.type === 'insert-start') {
+          insertingIndex = step.index;
+          draw();
+          resolve();
+        } else if (step.type === 'compare') {
           comparingIndices = step.indices;
           swappingIndices = [];
           draw();

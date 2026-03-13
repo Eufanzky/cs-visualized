@@ -101,6 +101,9 @@
     let sortedIndices = new Set();
     let comparingIndices = [];
     let swappingIndices = [];
+    let mergeRange = null;       // { left, mid, right } — currently merging region
+    let activeHalf = '';         // 'left' or 'right' — which half the placed element came from
+    let phaseLabel = '';         // status text for current phase
 
     // ── Colors ──
     const COLORS = {
@@ -109,6 +112,9 @@
       comparing:  '#c8a4d4',
       swapping:   '#e4c08a',
       sorted:     '#9cc49a',
+      mergeLeft:  '#8fbfb0',     // sage — left half of merge
+      mergeRight: '#d4968e',     // terracotta — right half of merge
+      mergeRegion:'rgba(200,164,212,0.08)', // subtle highlight for merge zone
       text:       '#ede6db',
       textMuted:  '#8a7e74',
       bg:         '#231f1c',
@@ -135,6 +141,9 @@
       sortedIndices.clear();
       comparingIndices = [];
       swappingIndices = [];
+      mergeRange = null;
+      activeHalf = '';
+      phaseLabel = '';
       stepQueue = [];
       currentStep = null;
       sorting = false;
@@ -155,6 +164,35 @@
       const barWidth = (w - padding * 2 - totalGaps) / n;
       const maxBarHeight = h - padding * 2 - 30;
 
+      // Draw merge region background highlight
+      if (mergeRange) {
+        const xStart = padding + mergeRange.left * (barWidth + gap) - gap;
+        const xEnd = padding + (mergeRange.right - 1) * (barWidth + gap) + barWidth + gap;
+        ctx.fillStyle = COLORS.mergeRegion;
+        ctx.fillRect(xStart, padding - 10, xEnd - xStart, h - padding * 2 + 20);
+
+        // Draw divider between left and right halves
+        const midX = padding + mergeRange.mid * (barWidth + gap) - gap / 2;
+        ctx.strokeStyle = 'rgba(200,164,212,0.3)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(midX, padding - 5);
+        ctx.lineTo(midX, h - padding + 5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Draw "L" and "R" labels above halves
+        ctx.font = '10px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        const leftCenter = padding + ((mergeRange.left + mergeRange.mid) / 2) * (barWidth + gap);
+        const rightCenter = padding + ((mergeRange.mid + mergeRange.right - 1) / 2) * (barWidth + gap);
+        ctx.fillStyle = COLORS.mergeLeft;
+        ctx.fillText('left', leftCenter, padding - 14);
+        ctx.fillStyle = COLORS.mergeRight;
+        ctx.fillText('right', rightCenter, padding - 14);
+      }
+
       for (let i = 0; i < arr.length; i++) {
         const x = padding + i * (barWidth + gap);
         const barH = arr[i] * maxBarHeight;
@@ -163,6 +201,17 @@
         let color = COLORS.bar;
         let topColor = COLORS.barTop;
         let glow = false;
+
+        // Color bars within merge range as left/right halves
+        if (mergeRange && i >= mergeRange.left && i < mergeRange.right) {
+          if (i < mergeRange.mid) {
+            color = COLORS.mergeLeft;
+            topColor = COLORS.mergeLeft;
+          } else {
+            color = COLORS.mergeRight;
+            topColor = COLORS.mergeRight;
+          }
+        }
 
         if (sortedIndices.has(i)) {
           color = COLORS.sorted;
@@ -221,7 +270,7 @@
       ctx.textAlign = 'left';
 
       let status = 'ready';
-      if (sorting) status = 'sorting...';
+      if (sorting) status = phaseLabel || 'sorting...';
       if (sortedIndices.size === n) status = 'sorted ✓';
 
       ctx.fillText(`n=${n}  |  ${status}`, padding, 24);
@@ -230,15 +279,16 @@
         ctx.fillStyle = COLORS.comparing;
         ctx.textAlign = 'right';
         ctx.fillText(
-          `comparing [${comparingIndices[0]}] & [${comparingIndices[1]}]`,
+          `comparing left[${comparingIndices[0]}] & right[${comparingIndices[1]}]`,
           w - padding, 24
         );
       }
       if (swappingIndices.length > 0 && !comparingIndices.length) {
         ctx.fillStyle = COLORS.swapping;
         ctx.textAlign = 'right';
+        const src = activeHalf === 'left' ? 'left' : activeHalf === 'right' ? 'right' : '';
         ctx.fillText(
-          `placing element into position`,
+          `placing from ${src} half → [${swappingIndices[0]}]`,
           w - padding, 24
         );
       }
@@ -259,39 +309,43 @@
       }
 
       function merge(left, mid, right) {
+        // Signal the start of a merge with range info
+        steps.push({ type: 'merge-start', left, mid, right });
+
         const temp = [];
+        const sources = []; // track which half each element came from
         let i = left, j = mid;
 
         while (i < mid && j < right) {
           steps.push({ type: 'compare', indices: [i, j] });
           if (a[i] <= a[j]) {
             temp.push(a[i]);
+            sources.push('left');
             i++;
           } else {
             temp.push(a[j]);
+            sources.push('right');
             j++;
           }
         }
         while (i < mid) {
           temp.push(a[i]);
+          sources.push('left');
           i++;
         }
         while (j < right) {
           temp.push(a[j]);
+          sources.push('right');
           j++;
         }
 
         for (let k = 0; k < temp.length; k++) {
           a[left + k] = temp[k];
-          steps.push({ type: 'place', index: left + k, value: temp[k] });
+          steps.push({ type: 'place', index: left + k, value: temp[k], half: sources[k] });
         }
 
-        // Mark this merged section as sorted if it's the final merge
-        if (left === 0 && right === len) {
-          for (let k = left; k < right; k++) {
-            steps.push({ type: 'sorted', index: k });
-          }
-        }
+        // Signal end of this merge
+        steps.push({ type: 'merge-end', left, right });
       }
 
       mergeSort(0, len);
@@ -308,7 +362,21 @@
     function executeStep(step) {
       LofiSounds.step(step);
       return new Promise(resolve => {
-        if (step.type === 'compare') {
+        if (step.type === 'merge-start') {
+          mergeRange = { left: step.left, mid: step.mid, right: step.right };
+          phaseLabel = `merging [${step.left}..${step.right - 1}]`;
+          comparingIndices = [];
+          swappingIndices = [];
+          draw();
+          setTimeout(resolve, getDelay() * 0.5);
+        } else if (step.type === 'merge-end') {
+          mergeRange = null;
+          activeHalf = '';
+          comparingIndices = [];
+          swappingIndices = [];
+          draw();
+          resolve();
+        } else if (step.type === 'compare') {
           comparingIndices = step.indices;
           swappingIndices = [];
           draw();
@@ -316,6 +384,7 @@
         } else if (step.type === 'place') {
           comparingIndices = [];
           swappingIndices = [step.index];
+          activeHalf = step.half || '';
 
           const startVal = arr[step.index];
           const endVal = step.value;
@@ -341,6 +410,7 @@
         } else if (step.type === 'sorted') {
           comparingIndices = [];
           swappingIndices = [];
+          mergeRange = null;
           sortedIndices.add(step.index);
           draw();
           resolve();

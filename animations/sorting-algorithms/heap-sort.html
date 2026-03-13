@@ -101,6 +101,8 @@
     let sortedIndices = new Set();
     let comparingIndices = [];
     let swappingIndices = [];
+    let phaseLabel = '';
+    let heapSize = 0;           // current heap boundary
 
     // ── Colors ──
     const COLORS = {
@@ -109,6 +111,7 @@
       comparing:  '#c8a4d4',
       swapping:   '#e4c08a',
       sorted:     '#9cc49a',
+      heapRoot:   '#d4968e',     // terracotta — root being sifted
       text:       '#ede6db',
       textMuted:  '#8a7e74',
       bg:         '#231f1c',
@@ -135,6 +138,8 @@
       sortedIndices.clear();
       comparingIndices = [];
       swappingIndices = [];
+      phaseLabel = '';
+      heapSize = 0;
       stepQueue = [];
       currentStep = null;
       sorting = false;
@@ -216,12 +221,33 @@
         }
       }
 
+      // Draw heap boundary line
+      if (heapSize > 0 && heapSize < n) {
+        const boundaryX = padding + heapSize * (barWidth + gap) - gap / 2;
+        ctx.strokeStyle = 'rgba(212,150,142,0.4)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(boundaryX, padding - 5);
+        ctx.lineTo(boundaryX, h - padding + 5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Labels
+        ctx.font = '9px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = COLORS.heapRoot;
+        ctx.fillText('heap', padding + (heapSize / 2) * (barWidth + gap), padding - 14);
+        ctx.fillStyle = COLORS.sorted;
+        ctx.fillText('sorted', padding + ((heapSize + n) / 2) * (barWidth + gap), padding - 14);
+      }
+
       ctx.fillStyle = COLORS.textMuted;
       ctx.font = '11px JetBrains Mono, monospace';
       ctx.textAlign = 'left';
 
       let status = 'ready';
-      if (sorting) status = 'sorting...';
+      if (sorting) status = phaseLabel || 'sorting...';
       if (sortedIndices.size === n) status = 'sorted ✓';
 
       ctx.fillText(`n=${n}  |  ${status}`, padding, 24);
@@ -230,7 +256,7 @@
         ctx.fillStyle = COLORS.comparing;
         ctx.textAlign = 'right';
         ctx.fillText(
-          `comparing [${comparingIndices[0]}] & [${comparingIndices[1]}]`,
+          `parent [${comparingIndices[0]}] vs child [${comparingIndices[1]}]`,
           w - padding, 24
         );
       }
@@ -238,7 +264,7 @@
         ctx.fillStyle = COLORS.swapping;
         ctx.textAlign = 'right';
         ctx.fillText(
-          `swapping [${swappingIndices[0]}] ↔ [${swappingIndices[1]}]`,
+          `swap [${swappingIndices[0]}] ↔ [${swappingIndices[1]}]`,
           w - padding, 24
         );
       }
@@ -256,36 +282,39 @@
         const right = 2 * root + 2;
 
         if (left < size) {
-          steps.push({ type: 'compare', indices: [largest, left] });
+          steps.push({ type: 'compare', indices: [largest, left], relation: 'parent-child' });
           if (a[left] > a[largest]) {
             largest = left;
           }
         }
 
         if (right < size) {
-          steps.push({ type: 'compare', indices: [largest, right] });
+          steps.push({ type: 'compare', indices: [largest, right], relation: 'parent-child' });
           if (a[right] > a[largest]) {
             largest = right;
           }
         }
 
         if (largest !== root) {
-          steps.push({ type: 'swap', indices: [root, largest] });
+          steps.push({ type: 'swap', indices: [root, largest], relation: 'sift-down' });
           [a[root], a[largest]] = [a[largest], a[root]];
           heapify(size, largest);
         }
       }
 
       // Build max-heap
+      steps.push({ type: 'phase', label: 'building max-heap', heapSize: len });
       for (let i = Math.floor(len / 2) - 1; i >= 0; i--) {
         heapify(len, i);
       }
 
       // Extract elements from heap
       for (let i = len - 1; i > 0; i--) {
-        steps.push({ type: 'swap', indices: [0, i] });
+        steps.push({ type: 'phase', label: 'extracting max', heapSize: i + 1 });
+        steps.push({ type: 'swap', indices: [0, i], relation: 'extract' });
         [a[0], a[i]] = [a[i], a[0]];
         steps.push({ type: 'sorted', index: i });
+        steps.push({ type: 'phase', label: 'sifting down root', heapSize: i });
         heapify(i, 0);
       }
 
@@ -299,7 +328,14 @@
     function executeStep(step) {
       LofiSounds.step(step);
       return new Promise(resolve => {
-        if (step.type === 'compare') {
+        if (step.type === 'phase') {
+          phaseLabel = step.label;
+          heapSize = step.heapSize;
+          comparingIndices = [];
+          swappingIndices = [];
+          draw();
+          resolve();
+        } else if (step.type === 'compare') {
           comparingIndices = step.indices;
           swappingIndices = [];
           draw();

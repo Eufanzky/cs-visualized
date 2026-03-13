@@ -103,6 +103,9 @@
     let comparingIndices = [];
     let swappingIndices = [];
     let pivotIndex = -1;
+    let partitionWall = -1;    // index where the partition boundary is
+    let partitionRange = null; // { low, high } — current partition bounds
+    let phaseLabel = '';
 
     // ── Colors ──
     const COLORS = {
@@ -112,6 +115,8 @@
       swapping:   '#e4c08a',
       sorted:     '#9cc49a',
       pivot:      '#d4968e',
+      wall:       '#8fbfb0',     // sage — partition wall indicator
+      lessThan:   'rgba(143,191,176,0.15)', // subtle green zone (< pivot)
       text:       '#ede6db',
       textMuted:  '#8a7e74',
       bg:         '#231f1c',
@@ -139,6 +144,9 @@
       comparingIndices = [];
       swappingIndices = [];
       pivotIndex = -1;
+      partitionWall = -1;
+      partitionRange = null;
+      phaseLabel = '';
       stepQueue = [];
       currentStep = null;
       sorting = false;
@@ -159,6 +167,33 @@
       const barWidth = (w - padding * 2 - totalGaps) / n;
       const maxBarHeight = h - padding * 2 - 30;
 
+      // Draw "less than pivot" zone background
+      if (partitionRange && partitionWall > partitionRange.low) {
+        const xStart = padding + partitionRange.low * (barWidth + gap) - gap;
+        const xEnd = padding + partitionWall * (barWidth + gap) - gap / 2;
+        ctx.fillStyle = COLORS.lessThan;
+        ctx.fillRect(xStart, padding - 10, xEnd - xStart, h - padding * 2 + 20);
+      }
+
+      // Draw partition wall indicator
+      if (partitionWall >= 0 && partitionRange) {
+        const wallX = padding + partitionWall * (barWidth + gap) - gap / 2;
+        ctx.strokeStyle = COLORS.wall;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(wallX, padding - 5);
+        ctx.lineTo(wallX, h - padding + 5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Label the wall
+        ctx.fillStyle = COLORS.wall;
+        ctx.font = '9px JetBrains Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('wall', wallX, padding - 14);
+      }
+
       for (let i = 0; i < arr.length; i++) {
         const x = padding + i * (barWidth + gap);
         const barH = arr[i] * maxBarHeight;
@@ -178,8 +213,11 @@
           glow = true;
         }
         if (comparingIndices.includes(i)) {
-          color = COLORS.comparing;
-          topColor = COLORS.comparing;
+          // Keep pivot colored as pivot, not as comparing
+          if (i !== pivotIndex) {
+            color = COLORS.comparing;
+            topColor = COLORS.comparing;
+          }
           glow = true;
         }
         if (swappingIndices.includes(i)) {
@@ -213,7 +251,13 @@
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
 
-        if (barWidth > 18) {
+        // Draw "P" label under pivot
+        if (i === pivotIndex && barWidth > 10) {
+          ctx.fillStyle = COLORS.pivot;
+          ctx.font = `bold ${Math.min(10, barWidth * 0.5)}px JetBrains Mono, monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillText('P', x + barWidth / 2, h - padding + 14);
+        } else if (barWidth > 18) {
           ctx.fillStyle = COLORS.textMuted;
           ctx.font = `${Math.min(10, barWidth * 0.4)}px JetBrains Mono, monospace`;
           ctx.textAlign = 'center';
@@ -230,34 +274,34 @@
       ctx.textAlign = 'left';
 
       let status = 'ready';
-      if (sorting) status = 'sorting...';
+      if (sorting) status = phaseLabel || 'sorting...';
       if (sortedIndices.size === n) status = 'sorted ✓';
 
       ctx.fillText(`n=${n}  |  ${status}`, padding, 24);
 
-      if (pivotIndex >= 0 && !comparingIndices.length && !swappingIndices.length) {
-        ctx.fillStyle = COLORS.pivot;
+      // Always show pivot info when pivot is active
+      if (pivotIndex >= 0) {
         ctx.textAlign = 'right';
-        ctx.fillText(
-          `pivot [${pivotIndex}]`,
-          w - padding, 24
-        );
-      }
-      if (comparingIndices.length === 2) {
-        ctx.fillStyle = COLORS.comparing;
-        ctx.textAlign = 'right';
-        ctx.fillText(
-          `comparing [${comparingIndices[0]}] & [${comparingIndices[1]}]`,
-          w - padding, 24
-        );
-      }
-      if (swappingIndices.length === 2) {
-        ctx.fillStyle = COLORS.swapping;
-        ctx.textAlign = 'right';
-        ctx.fillText(
-          `swapping [${swappingIndices[0]}] ↔ [${swappingIndices[1]}]`,
-          w - padding, 24
-        );
+        if (comparingIndices.length === 2) {
+          const scanIdx = comparingIndices[0] === pivotIndex ? comparingIndices[1] : comparingIndices[0];
+          ctx.fillStyle = COLORS.comparing;
+          ctx.fillText(
+            `[${scanIdx}] vs pivot  |  wall at [${partitionWall}]`,
+            w - padding, 24
+          );
+        } else if (swappingIndices.length === 2) {
+          ctx.fillStyle = COLORS.swapping;
+          ctx.fillText(
+            `swap [${swappingIndices[0]}] ↔ [${swappingIndices[1]}]  |  wall at [${partitionWall}]`,
+            w - padding, 24
+          );
+        } else {
+          ctx.fillStyle = COLORS.pivot;
+          ctx.fillText(
+            `pivot [${pivotIndex}] = ${Math.round(arr[pivotIndex] * 100)}`,
+            w - padding, 24
+          );
+        }
       }
     }
 
@@ -276,14 +320,16 @@
         }
         const p = partition(low, high);
         steps.push({ type: 'sorted', index: p });
+        steps.push({ type: 'partition-end' });
         quickSort(low, p - 1);
         quickSort(p + 1, high);
       }
 
       function partition(low, high) {
         const pivotVal = a[high];
-        steps.push({ type: 'pivot', index: high });
+        steps.push({ type: 'pivot', index: high, low, high });
         let i = low;
+        steps.push({ type: 'wall', index: i });
 
         for (let j = low; j < high; j++) {
           steps.push({ type: 'compare', indices: [j, high] });
@@ -293,6 +339,7 @@
               [a[i], a[j]] = [a[j], a[i]];
             }
             i++;
+            steps.push({ type: 'wall', index: i });
           }
         }
 
@@ -320,10 +367,25 @@
       return new Promise(resolve => {
         if (step.type === 'pivot') {
           pivotIndex = step.index;
+          partitionRange = { low: step.low, high: step.high };
+          phaseLabel = `partitioning [${step.low}..${step.high}]`;
           comparingIndices = [];
           swappingIndices = [];
           draw();
           setTimeout(resolve, getDelay() * 0.5);
+        } else if (step.type === 'wall') {
+          partitionWall = step.index;
+          draw();
+          resolve();
+        } else if (step.type === 'partition-end') {
+          pivotIndex = -1;
+          partitionWall = -1;
+          partitionRange = null;
+          phaseLabel = '';
+          comparingIndices = [];
+          swappingIndices = [];
+          draw();
+          resolve();
         } else if (step.type === 'compare') {
           comparingIndices = step.indices;
           swappingIndices = [];
@@ -400,6 +462,9 @@
         comparingIndices = [];
         swappingIndices = [];
         pivotIndex = -1;
+        partitionWall = -1;
+        partitionRange = null;
+        phaseLabel = '';
         draw();
       }
       updatePlayBtn();
@@ -418,6 +483,9 @@
           comparingIndices = [];
           swappingIndices = [];
           pivotIndex = -1;
+          partitionWall = -1;
+          partitionRange = null;
+          phaseLabel = '';
           draw();
         }
       }
