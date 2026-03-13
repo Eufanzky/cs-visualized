@@ -43,9 +43,9 @@ export const CATEGORIES: Category[] = [
       'Watch elements rearrange themselves through comparison, swapping, and partitioning strategies.',
     animations: [
       { id: 'bubble-sort',    title: 'Bubble Sort',    complexity: 'O(n²)',      status: 'ready' },
-      { id: 'merge-sort',     title: 'Merge Sort',     complexity: 'O(n log n)', status: 'coming' },
-      { id: 'quick-sort',     title: 'Quick Sort',     complexity: 'O(n log n)', status: 'coming' },
-      { id: 'insertion-sort', title: 'Insertion Sort', complexity: 'O(n²)',      status: 'coming' },
+      { id: 'merge-sort',     title: 'Merge Sort',     complexity: 'O(n log n)', status: 'ready' },
+      { id: 'quick-sort',     title: 'Quick Sort',     complexity: 'O(n log n)', status: 'ready' },
+      { id: 'insertion-sort', title: 'Insertion Sort', complexity: 'O(n²)',      status: 'ready' },
       { id: 'heap-sort',      title: 'Heap Sort',      complexity: 'O(n log n)', status: 'coming' },
     ],
   },
@@ -61,11 +61,11 @@ export const CATEGORIES: Category[] = [
       'Explore how data is organized, stored, and accessed in memory through fundamental structures.',
     animations: [
       { id: 'array',       title: 'Array',        complexity: 'O(1) access', status: 'coming' },
-      { id: 'linked-list', title: 'Linked List',  complexity: 'O(n) access', status: 'coming' },
+      { id: 'linked-list', title: 'Linked List',  complexity: 'O(n) access', status: 'ready' },
       { id: 'binary-tree', title: 'Binary Tree',  complexity: 'O(log n)',    status: 'coming' },
       { id: 'hash-table',  title: 'Hash Table',   complexity: 'O(1) avg',    status: 'coming' },
-      { id: 'stack',       title: 'Stack',         complexity: 'LIFO',        status: 'coming' },
-      { id: 'queue',       title: 'Queue',         complexity: 'FIFO',        status: 'coming' },
+      { id: 'stack',       title: 'Stack',         complexity: 'LIFO',        status: 'ready' },
+      { id: 'queue',       title: 'Queue',         complexity: 'FIFO',        status: 'ready' },
       { id: 'heap',        title: 'Heap',          complexity: 'O(log n)',    status: 'coming' },
       { id: 'graph',       title: 'Graph',         complexity: 'varies',      status: 'coming' },
     ],
@@ -81,7 +81,7 @@ export const CATEGORIES: Category[] = [
     description:
       'Follow the path as algorithms hunt for targets through sorted arrays, trees, and graphs.',
     animations: [
-      { id: 'binary-search', title: 'Binary Search',       complexity: 'O(log n)', status: 'coming' },
+      { id: 'binary-search', title: 'Binary Search',       complexity: 'O(log n)', status: 'ready' },
       { id: 'bfs',           title: 'Breadth-First Search', complexity: 'O(V+E)',   status: 'coming' },
       { id: 'dfs',           title: 'Depth-First Search',   complexity: 'O(V+E)',   status: 'coming' },
       { id: 'a-star',        title: 'A* Search',            complexity: 'O(E)',     status: 'coming' },

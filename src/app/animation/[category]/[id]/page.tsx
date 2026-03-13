@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { CATEGORIES, getAnimationById } from '@/lib/categories';
-import ControlsBar from '@/components/ControlsBar';
+import { AnimationViewClient } from '@/components/AnimationViewClient';
 
 /* ── Static params (SSG — only 'ready' animations get real routes) ─── */
 
@@ -160,78 +160,10 @@ export default async function AnimationPage({
         </p>
       </header>
 
-      {/* ── Canvas Container ─────────────────────────────────────── */}
-      <div
-        id="canvas-wrapper"
-        style={{
-          position: 'relative',
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-md)',
-          overflow: 'hidden',
-          marginBottom: '1.5rem',
-          minHeight: '440px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {/* Placeholder shown until the actual canvas animation hydrates.
-            Real canvas logic lives in the vanilla HTML file at
-            animations/{category.id}/{animation.id}.html
-            and will be embedded or iframe'd in a future iteration. */}
-        <div
-          style={{
-            textAlign: 'center',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.8rem',
-            color: 'var(--text-muted)',
-            userSelect: 'none',
-          }}
-        >
-          <div
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: '50%',
-              border: `2px solid ${category.accentHex}44`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 1.25rem',
-              fontSize: '1.5rem',
-              color: category.accentHex,
-            }}
-          >
-            {category.icon}
-          </div>
-          <p style={{ marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-            Canvas animation loads here
-          </p>
-          <p style={{ fontSize: '0.68rem' }}>
-            Press <span style={{ color: 'var(--syn-keyword)' }}>Play</span> to begin
-          </p>
-        </div>
-
-        {/* Corner decoration */}
-        <div
-          aria-hidden
-          style={{
-            position: 'absolute',
-            top: '1rem',
-            right: '1rem',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.62rem',
-            color: 'var(--border)',
-            letterSpacing: '0.1em',
-          }}
-        >
-          canvas
-        </div>
+      {/* ── Animation Canvas + Controls (client component) ──────── */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <AnimationViewClient algorithmId={animation.id} initialSize={24} />
       </div>
-
-      {/* ── Controls Bar (client component) ─────────────────────── */}
-      <ControlsBar accentHex={category.accentHex} />
 
       {/* ── Info Panels ──────────────────────────────────────────── */}
       <div
@@ -261,7 +193,7 @@ export default async function AnimationPage({
               marginBottom: '1rem',
             }}
           >
-            // how it works
+            {'// how it works'}
           </h2>
           <ol style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
             {info.howItWorks.map((step, i) => (
@@ -311,7 +243,7 @@ export default async function AnimationPage({
               marginBottom: '1rem',
             }}
           >
-            // complexity
+            {'// complexity'}
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {(
@@ -378,7 +310,7 @@ export default async function AnimationPage({
               marginBottom: '0.75rem',
             }}
           >
-            // key insight
+            {'// key insight'}
           </h2>
           <p
             style={{

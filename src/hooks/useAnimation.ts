@@ -5,12 +5,10 @@ import {
   AnimationState,
   AnimationStep,
   applyStep,
-  generateArray,
   getSwapFrames,
   reset,
   speedToDelay,
   COLORS,
-  easeInOutCubic,
 } from '../lib/animation-engine';
 import type { StepGenerator } from '../lib/algorithms';
 

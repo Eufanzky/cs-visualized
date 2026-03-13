@@ -51,7 +51,7 @@ export default function HomePage() {
             marginBottom: '1.5rem',
           }}
         >
-          <span style={{ color: 'var(--text-muted)' }}>// </span>
+          <span style={{ color: 'var(--text-muted)' }}>{'//'} </span>
           interactive algorithm visualizations
         </p>
 

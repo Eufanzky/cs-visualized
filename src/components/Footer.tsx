@@ -31,7 +31,7 @@ export default function Footer() {
         </span>
 
         <span style={{ color: 'var(--border)' }}>
-          // interactive algorithm animations — {year}
+          {'// interactive algorithm animations'} &mdash; {year}
         </span>
 
         <span>

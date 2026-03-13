@@ -209,7 +209,7 @@ export default async function CategoryPage({
                 marginBottom: '1.25rem',
               }}
             >
-              // available now
+              {'// available now'}
             </h2>
             <div
               style={{
@@ -246,7 +246,7 @@ export default async function CategoryPage({
                 marginBottom: '1.25rem',
               }}
             >
-              // coming soon
+              {'// coming soon'}
             </h2>
             <div
               style={{
