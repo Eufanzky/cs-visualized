@@ -55,9 +55,9 @@ export function AnimationView({ algorithmId, initialSize = 24 }: AnimationViewPr
   return (
     <section aria-label="Interactive algorithm visualisation" className="flex flex-col">
       {/* Tool window container */}
-      <div className="rounded-lg border border-white/[0.08] bg-[#0a0a11] overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+      <div className="rounded-lg border border-white/[0.08] bg-[#0a0a11] overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(246,193,119,0.03)]">
         {/* Top title bar — terminal / IDE panel feel */}
-        <div className="flex items-center gap-2.5 px-4 sm:px-5 py-2.5 border-b border-white/[0.06] bg-[#0e0e16]">
+        <div className="flex items-center gap-2.5 px-4 sm:px-5 py-2.5 border-b border-white/[0.06] bg-[#0f0e14]">
           <span className={`block h-2 w-2 rounded-full ${dotClass} shrink-0`} aria-hidden />
           <span className="text-[11px] font-mono text-[#6e6a86] tracking-wide select-none">
             {algorithmName}

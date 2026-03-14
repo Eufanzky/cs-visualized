@@ -13,6 +13,7 @@ import {
 import { getRenderer } from '../lib/renderers';
 import { drawBarChart } from '../lib/renderers/bar-chart';
 import { isStepResult, type StepGenerator } from '../lib/algorithms';
+import { lofiSounds } from '../lib/lofi-sounds';
 
 // ── Return type ───────────────────────────────────────────────────────────
 
@@ -122,6 +123,15 @@ export function useAnimation(
         const delay = speedToDelay(speed);
         const s = stateRef.current;
         const isBarChart = rendererTypeRef.current === 'bar-chart';
+
+        // Trigger sound effect for this step
+        lofiSounds.step({
+          type: step.type,
+          value: step.indices.length > 0
+            ? s.array[step.indices[0]] / Math.max(...s.array)
+            : 0.5,
+          values: step.values?.map(v => v / Math.max(...s.array)),
+        });
 
         if (step.type === 'compare') {
           const next = applyStep(s, step);

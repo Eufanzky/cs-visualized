@@ -92,7 +92,7 @@ export function AnimationCanvas({
           aria-hidden
           className="pointer-events-none absolute inset-0"
           style={{
-            backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)',
+            backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px)',
             mixBlendMode: 'multiply',
           }}
         />
@@ -102,19 +102,19 @@ export function AnimationCanvas({
           aria-hidden
           className="pointer-events-none absolute inset-0"
           style={{
-            boxShadow: 'inset 0 0 80px rgba(0,0,0,0.55)',
+            boxShadow: 'inset 0 0 80px rgba(0,0,0,0.55), inset 0 0 200px rgba(20, 12, 4, 0.15)',
           }}
         />
 
         {/* Corner crop marks — viewfinder / technical viewport */}
         {/* Top-left */}
-        <div aria-hidden className="pointer-events-none absolute top-2.5 left-2.5 w-4 h-4 border-t border-l border-white/[0.15]" />
+        <div aria-hidden className="pointer-events-none absolute top-2.5 left-2.5 w-4 h-4 border-t border-l amber-100/[0.12]" />
         {/* Top-right */}
-        <div aria-hidden className="pointer-events-none absolute top-2.5 right-2.5 w-4 h-4 border-t border-r border-white/[0.15]" />
+        <div aria-hidden className="pointer-events-none absolute top-2.5 right-2.5 w-4 h-4 border-t border-r amber-100/[0.12]" />
         {/* Bottom-left */}
-        <div aria-hidden className="pointer-events-none absolute bottom-2.5 left-2.5 w-4 h-4 border-b border-l border-white/[0.15]" />
+        <div aria-hidden className="pointer-events-none absolute bottom-2.5 left-2.5 w-4 h-4 border-b border-l amber-100/[0.12]" />
         {/* Bottom-right */}
-        <div aria-hidden className="pointer-events-none absolute bottom-2.5 right-2.5 w-4 h-4 border-b border-r border-white/[0.15]" />
+        <div aria-hidden className="pointer-events-none absolute bottom-2.5 right-2.5 w-4 h-4 border-b border-r amber-100/[0.12]" />
 
         {/* Completion glow — green pulse overlay when algorithm finishes */}
         <AnimatePresence>

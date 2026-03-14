@@ -176,18 +176,6 @@ export default function HeroSection() {
           style={{ y: bgY }}
         />
 
-        {/* Decorative code snippet — visual accent */}
-        <div aria-hidden className="hero-code-deco">
-{`const visualize = (algo) => {
-  return algo
-    .steps()
-    .map(s => render(s));
-};
-
-// ${CATEGORIES.length} categories
-// ${TOTAL_ANIMATIONS} algorithms planned`}
-        </div>
-
         {/* Eyebrow */}
         <motion.p
           custom={0}

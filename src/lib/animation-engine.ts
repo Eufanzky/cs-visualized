@@ -106,8 +106,17 @@ export interface TrainingPoint {
   label: number;
 }
 
+export interface NeuronLayerEdge {
+  from: [number, number];
+  to: [number, number];
+  weight: number;
+  highlighted?: boolean;
+}
+
 export interface NeuronScene {
   type: 'neuron';
+  /** 'perceptron' | 'multilayer' | 'convolution' | 'gradient-descent' */
+  variant?: string;
   inputs: number[];
   weights: number[];
   bias: number;
@@ -118,6 +127,42 @@ export interface NeuronScene {
   /** Decision boundary parameters (for 2-input): w1*x + w2*y + b = 0 */
   decisionBoundary?: { w1: number; w2: number; bias: number };
   trainingPoints?: TrainingPoint[];
+
+  // ── Multi-layer network fields (backpropagation) ──
+  /** Layer definitions: each layer has node activation values and optional labels */
+  layers?: Array<{ nodes: number[]; labels?: string[] }>;
+  /** Edges between layers with weights and highlight state */
+  layerEdges?: NeuronLayerEdge[];
+  /** Current phase: 'forward' | 'backward' | 'update' | 'idle' */
+  networkPhase?: string;
+  /** Current loss value */
+  loss?: number;
+
+  // ── CNN fields (convolution) ──
+  /** Input image grid (2D values 0-1) */
+  inputGrid?: number[][];
+  /** Convolution kernel */
+  kernel?: number[][];
+  /** Feature map produced by convolution */
+  featureMap?: (number | null)[][];
+  /** Current kernel position during convolution */
+  kernelPosition?: { row: number; col: number };
+  /** Pooled output after max-pooling */
+  poolingResult?: (number | null)[][];
+  /** CNN processing phase: 'conv' | 'pool' | 'done' */
+  cnnPhase?: string;
+
+  // ── Gradient descent fields ──
+  /** Path of positions visited during descent */
+  lossPath?: Array<{ x: number; y: number; loss: number }>;
+  /** Current position on the loss surface */
+  currentPosition?: { x: number; y: number; loss: number };
+  /** Learning rate */
+  learningRate?: number;
+  /** Surface parameters for contour rendering */
+  surfaceParams?: { a: number; b: number; angle: number; centerX: number; centerY: number };
+  /** Current gradient vector */
+  gradient?: { dx: number; dy: number };
 }
 
 export interface MazeScene {

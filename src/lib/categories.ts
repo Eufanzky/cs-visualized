@@ -60,14 +60,14 @@ export const CATEGORIES: Category[] = [
     description:
       'Explore how data is organized, stored, and accessed in memory through fundamental structures.',
     animations: [
-      { id: 'array',       title: 'Array',        complexity: 'O(1) access', status: 'coming' },
+      { id: 'array',       title: 'Array',        complexity: 'O(1) access', status: 'ready' },
       { id: 'linked-list', title: 'Linked List',  complexity: 'O(n) access', status: 'ready' },
       { id: 'binary-tree', title: 'Binary Tree',  complexity: 'O(log n)',    status: 'ready' },
       { id: 'hash-table',  title: 'Hash Table',   complexity: 'O(1) avg',    status: 'ready' },
       { id: 'stack',       title: 'Stack',         complexity: 'LIFO',        status: 'ready' },
       { id: 'queue',       title: 'Queue',         complexity: 'FIFO',        status: 'ready' },
-      { id: 'heap',        title: 'Heap',          complexity: 'O(log n)',    status: 'coming' },
-      { id: 'graph',       title: 'Graph',         complexity: 'varies',      status: 'coming' },
+      { id: 'heap',        title: 'Heap',          complexity: 'O(log n)',    status: 'ready' },
+      { id: 'graph',       title: 'Graph',         complexity: 'varies',      status: 'ready' },
     ],
   },
   {
@@ -86,7 +86,7 @@ export const CATEGORIES: Category[] = [
       { id: 'dfs',           title: 'Depth-First Search',   complexity: 'O(V+E)',   status: 'ready' },
       { id: 'bfs-maze',      title: 'BFS Maze Solver',      complexity: 'O(V+E)',   status: 'ready' },
       { id: 'dfs-maze',      title: 'DFS Maze Solver',      complexity: 'O(V+E)',   status: 'ready' },
-      { id: 'a-star',        title: 'A* Search',            complexity: 'O(E)',     status: 'coming' },
+      { id: 'a-star',        title: 'A* Search',            complexity: 'O(E)',     status: 'ready' },
     ],
   },
   {
@@ -101,9 +101,9 @@ export const CATEGORIES: Category[] = [
       'Witness shortest paths emerge and spanning trees grow across weighted and unweighted graphs.',
     animations: [
       { id: 'dijkstra',         title: "Dijkstra's Algorithm", complexity: 'O(V² / E log V)', status: 'ready' },
-      { id: 'kruskal',          title: "Kruskal's Algorithm",  complexity: 'O(E log E)',       status: 'coming' },
-      { id: 'prim',             title: "Prim's Algorithm",     complexity: 'O(E log V)',       status: 'coming' },
-      { id: 'topological-sort', title: 'Topological Sort',     complexity: 'O(V+E)',           status: 'coming' },
+      { id: 'kruskal',          title: "Kruskal's Algorithm",  complexity: 'O(E log E)',       status: 'ready' },
+      { id: 'prim',             title: "Prim's Algorithm",     complexity: 'O(E log V)',       status: 'ready' },
+      { id: 'topological-sort', title: 'Topological Sort',     complexity: 'O(V+E)',           status: 'ready' },
     ],
   },
   {
@@ -135,9 +135,9 @@ export const CATEGORIES: Category[] = [
       'Visualize forward passes, backpropagation, and gradient descent as networks learn patterns.',
     animations: [
       { id: 'perceptron',       title: 'Perceptron',       complexity: 'single neuron', status: 'ready' },
-      { id: 'backpropagation',  title: 'Backpropagation',  complexity: 'chain rule',    status: 'coming' },
-      { id: 'cnn',              title: 'Convolutional NN', complexity: 'convolutions',  status: 'coming' },
-      { id: 'gradient-descent', title: 'Gradient Descent', complexity: 'optimization',  status: 'coming' },
+      { id: 'backpropagation',  title: 'Backpropagation',  complexity: 'chain rule',    status: 'ready' },
+      { id: 'cnn',              title: 'Convolutional NN', complexity: 'convolutions',  status: 'ready' },
+      { id: 'gradient-descent', title: 'Gradient Descent', complexity: 'optimization',  status: 'ready' },
     ],
   },
 ];

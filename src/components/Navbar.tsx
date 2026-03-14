@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
+import MusicToggle from './MusicToggle';
+import SoundToggle from './SoundToggle';
 
 const NAV_LINKS = [
   { href: '/',            label: 'home' },
@@ -118,6 +120,17 @@ export default function Navbar() {
             </motion.li>
           );
         })}
+
+        {/* Audio toggles */}
+        <motion.li
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+        >
+          <MusicToggle />
+          <SoundToggle />
+        </motion.li>
 
         {/* GitHub link */}
         <motion.li

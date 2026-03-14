@@ -53,6 +53,7 @@ function makeScene(
 ): NeuronScene {
   return {
     type: 'neuron',
+    variant: 'perceptron',
     inputs: [x1, x2],
     weights: [w1, w2],
     bias,
@@ -77,6 +78,7 @@ export function generatePerceptronSteps(arr: number[]): StepResult {
   // Initial scene (before any training step)
   const initialScene: NeuronScene = {
     type: 'neuron',
+    variant: 'perceptron',
     inputs: [0, 0],
     weights: [w1, w2],
     bias,
@@ -156,6 +158,7 @@ export function generatePerceptronSteps(arr: number[]): StepResult {
       // Show all points, no specific current example
       const convergenceScene: NeuronScene = {
         type: 'neuron',
+        variant: 'perceptron',
         inputs: [1, 1],
         weights: [w1, w2],
         bias,
@@ -176,6 +179,7 @@ export function generatePerceptronSteps(arr: number[]): StepResult {
 
   const finalScene: NeuronScene = {
     type: 'neuron',
+    variant: 'perceptron',
     inputs: [1, 1],
     weights: [w1, w2],
     bias,

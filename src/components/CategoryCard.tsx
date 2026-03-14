@@ -88,7 +88,7 @@ export default function CategoryCard({ category, index }: Props) {
           overflow: 'hidden',
           transition: 'border-color 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s cubic-bezier(0.16,1,0.3,1), background 0.4s cubic-bezier(0.16,1,0.3,1)',
           boxShadow: hovered
-            ? `0 24px 48px -12px rgba(0,0,0,0.65), 0 0 0 1px ${category.accentHex}22, 0 0 40px -8px ${category.accentHex}44`
+            ? `0 24px 48px -12px rgba(10,6,2,0.65), 0 0 0 1px ${category.accentHex}22, 0 0 40px -8px ${category.accentHex}44, inset 0 1px 0 rgba(246,193,119,0.04)`
             : 'none',
           cursor: 'pointer',
         }}
@@ -120,7 +120,7 @@ export default function CategoryCard({ category, index }: Props) {
             }}
           />
 
-          {/* Radial glow spotlight */}
+          {/* Radial glow spotlight — warm-tinted */}
           <motion.div
             aria-hidden
             animate={{ opacity: hovered ? 1 : 0 }}
@@ -130,6 +130,20 @@ export default function CategoryCard({ category, index }: Props) {
               inset: 0,
               background: `radial-gradient(500px circle at ${mousePos.x} ${mousePos.y}, ${category.glowRgba}, transparent 40%)`,
               pointerEvents: 'none',
+            }}
+          />
+
+          {/* Grain texture on hover */}
+          <motion.div
+            aria-hidden
+            animate={{ opacity: hovered ? 0.5 : 0 }}
+            transition={{ duration: 0.4 }}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 128 128' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.06'/%3E%3C/svg%3E")`,
+              pointerEvents: 'none',
+              borderRadius: 'inherit',
             }}
           />
 

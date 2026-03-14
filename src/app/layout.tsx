@@ -8,6 +8,7 @@ import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PageTransition from '@/components/PageTransition';
+import AmbientBackground from '@/components/AmbientBackground';
 
 /* ── Fonts ─────────────────────────────────────────────────────────── */
 
@@ -80,6 +81,7 @@ export default function RootLayout({
       className={`${jetbrainsMono.variable} ${outfit.variable} ${instrumentSerif.variable}`}
     >
       <body className="antialiased">
+        <AmbientBackground />
         {/* Skip to main content — first focusable element for keyboard/screen-reader users */}
         <a href="#main-content" className="skip-to-content">
           Skip to main content

@@ -29,6 +29,7 @@ export default function Footer() {
         color: 'var(--text-muted)',
         letterSpacing: '0.12em',
         overflow: 'hidden',
+        background: 'radial-gradient(ellipse 60% 100% at 50% 0%, rgba(246, 193, 119, 0.025) 0%, transparent 70%)',
       }}
     >
       <motion.div style={{ y, opacity }}>

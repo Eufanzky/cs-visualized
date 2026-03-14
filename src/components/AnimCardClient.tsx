@@ -51,7 +51,7 @@ export default function AnimCardClient({
         const el = e.currentTarget;
         el.style.transform = 'translateY(-3px)';
         el.style.borderColor = `${accentHex}55`;
-        el.style.boxShadow = `0 14px 32px -8px rgba(0,0,0,0.5), 0 0 20px ${accentHex}15`;
+        el.style.boxShadow = `0 14px 32px -8px rgba(10,6,2,0.5), 0 0 20px ${accentHex}15, inset 0 1px 0 rgba(246,193,119,0.04)`;
         el.style.background = 'var(--bg-elevated)';
       }}
       onMouseLeave={(e) => {

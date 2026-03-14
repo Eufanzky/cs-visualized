@@ -22,6 +22,16 @@ import { generateLCSSteps } from './lcs';
 import { generateBFSMazeSteps } from './bfs-maze';
 import { generateDFSMazeSteps } from './dfs-maze';
 import { generateFibonacciTreeSteps } from './fibonacci-tree';
+import { generateBackpropagationSteps } from './backpropagation';
+import { generateCNNSteps } from './cnn';
+import { generateGradientDescentSteps } from './gradient-descent';
+import { generateKruskalSteps } from './kruskal';
+import { generatePrimSteps } from './prim';
+import { generateTopologicalSortSteps } from './topological-sort';
+import { generateAStarSteps } from './a-star';
+import { generateArraySteps } from './array';
+import { generateHeapSteps } from './heap';
+import { generateGraphDSSteps } from './graph-ds';
 
 // ── Algorithm registry ────────────────────────────────────────────────────
 
@@ -317,6 +327,136 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     stable: true,
     generateSteps: generateDFSMazeSteps,
     rendererType: 'maze',
+  },
+  'backpropagation': {
+    id: 'backpropagation',
+    name: 'Backpropagation',
+    category: 'neural-networks',
+    description:
+      'Watch error gradients flow backward through a multi-layer network, adjusting weights via the chain rule to minimize loss.',
+    timeComplexityWorst: 'O(epochs × layers × weights)',
+    timeComplexityBest: 'O(layers × weights)',
+    spaceComplexity: 'O(weights)',
+    stable: true,
+    generateSteps: generateBackpropagationSteps,
+    rendererType: 'neuron',
+  },
+  'cnn': {
+    id: 'cnn',
+    name: 'Convolutional Neural Network',
+    category: 'neural-networks',
+    description:
+      'See convolution filters slide over an input grid, producing feature maps, then max-pooling to reduce spatial dimensions.',
+    timeComplexityWorst: 'O(input² × kernel²)',
+    timeComplexityBest: 'O(input² × kernel²)',
+    spaceComplexity: 'O(feature²)',
+    stable: true,
+    generateSteps: generateCNNSteps,
+    rendererType: 'neuron',
+  },
+  'gradient-descent': {
+    id: 'gradient-descent',
+    name: 'Gradient Descent',
+    category: 'neural-networks',
+    description:
+      'Watch a point descend a loss surface by following the negative gradient, iteratively updating its position to find the minimum.',
+    timeComplexityWorst: 'O(iterations)',
+    timeComplexityBest: 'O(1)',
+    spaceComplexity: 'O(1)',
+    stable: true,
+    generateSteps: generateGradientDescentSteps,
+    rendererType: 'neuron',
+  },
+  'kruskal': {
+    id: 'kruskal',
+    name: "Kruskal's Algorithm",
+    category: 'graph-algorithms',
+    description:
+      'Build a minimum spanning tree by sorting all edges by weight and greedily adding each edge that does not create a cycle, using union-find to detect connectivity.',
+    timeComplexityWorst: 'O(E log E)',
+    timeComplexityBest: 'O(E log E)',
+    spaceComplexity: 'O(V)',
+    stable: true,
+    generateSteps: generateKruskalSteps,
+    rendererType: 'graph',
+  },
+  'prim': {
+    id: 'prim',
+    name: "Prim's Algorithm",
+    category: 'graph-algorithms',
+    description:
+      'Grow a minimum spanning tree from a starting node by repeatedly adding the cheapest edge that connects an MST node to a non-MST node.',
+    timeComplexityWorst: 'O(E log V)',
+    timeComplexityBest: 'O(E log V)',
+    spaceComplexity: 'O(V)',
+    stable: true,
+    generateSteps: generatePrimSteps,
+    rendererType: 'graph',
+  },
+  'topological-sort': {
+    id: 'topological-sort',
+    name: 'Topological Sort',
+    category: 'graph-algorithms',
+    description:
+      'Order the vertices of a directed acyclic graph so that every edge points from an earlier vertex to a later one, using Kahn\'s BFS-based algorithm with in-degree tracking.',
+    timeComplexityWorst: 'O(V+E)',
+    timeComplexityBest: 'O(V+E)',
+    spaceComplexity: 'O(V)',
+    stable: true,
+    generateSteps: generateTopologicalSortSteps,
+    rendererType: 'graph',
+  },
+  'a-star': {
+    id: 'a-star',
+    name: 'A* Search',
+    category: 'search-algorithms',
+    description:
+      'Find the optimal path through a maze using a heuristic-guided search that combines actual distance traveled with an estimated remaining distance.',
+    timeComplexityWorst: 'O(E)',
+    timeComplexityBest: 'O(1)',
+    spaceComplexity: 'O(V)',
+    stable: true,
+    generateSteps: generateAStarSteps,
+    rendererType: 'maze',
+  },
+  'array': {
+    id: 'array',
+    name: 'Array',
+    category: 'data-structures',
+    description:
+      'A contiguous block of memory supporting O(1) random access by index, with O(n) insert and delete due to element shifting.',
+    timeComplexityWorst: 'O(n) insert/delete',
+    timeComplexityBest: 'O(1) access',
+    spaceComplexity: 'O(n)',
+    stable: true,
+    generateSteps: generateArraySteps,
+    rendererType: 'linear',
+  },
+  'heap': {
+    id: 'heap',
+    name: 'Heap',
+    category: 'data-structures',
+    description:
+      'A complete binary tree where each parent is smaller than its children (min-heap), supporting O(log n) insert and extract-min via bubble-up and bubble-down.',
+    timeComplexityWorst: 'O(log n)',
+    timeComplexityBest: 'O(1) peek',
+    spaceComplexity: 'O(n)',
+    stable: true,
+    generateSteps: generateHeapSteps,
+    rendererType: 'tree',
+  },
+  'graph': {
+    id: 'graph',
+    name: 'Graph',
+    category: 'data-structures',
+    description:
+      'A collection of vertices and edges representing pairwise relationships, supporting node/edge addition and BFS/DFS traversal.',
+    timeComplexityWorst: 'O(V+E) traversal',
+    timeComplexityBest: 'O(1) add node',
+    spaceComplexity: 'O(V+E)',
+    stable: true,
+    generateSteps: generateGraphDSSteps,
+    rendererType: 'graph',
   },
 };
 

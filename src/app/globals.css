@@ -96,7 +96,7 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background: var(--bg-deep);
+  background: color-mix(in srgb, var(--bg-deep) 97%, #1a1008);
   color: var(--text-primary);
   line-height: 1.6;
   min-height: 100vh;
@@ -108,24 +108,38 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
   pointer-events: none;
   z-index: 9999;
+}
+
+/* ── Vignette overlay ── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 80% 70% at 50% 50%,
+    transparent 50%,
+    rgba(8, 6, 3, 0.45) 100%
+  );
+  pointer-events: none;
+  z-index: 9998;
 }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(42, 42, 58, 0.6);
+  background: rgba(60, 48, 36, 0.5);
   border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(110, 106, 134, 0.5); }
+::-webkit-scrollbar-thumb:hover { background: rgba(140, 115, 90, 0.45); }
 
 /* Firefox thin scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(42, 42, 58, 0.6) transparent;
+  scrollbar-color: rgba(60, 48, 36, 0.5) transparent;
 }
 
 /* ── Text selection ── */
@@ -485,7 +499,12 @@ input[type='range']::-moz-range-track {
   font-size: 2.5rem !important;
   font-weight: 400 !important;
   letter-spacing: -0.02em !important;
-  text-shadow: 0 1px 24px rgba(196, 167, 231, 0.1);
+  text-shadow: 0 1px 24px rgba(196, 167, 231, 0.1), 0 0 40px rgba(246, 193, 119, 0.06);
+}
+
+/* ── Warm heading glow ── */
+h1, h2, h3 {
+  text-shadow: 0 1px 12px rgba(246, 193, 119, 0.05);
 }
 
 /* Gradient section line (replaces solid) */
@@ -571,8 +590,8 @@ input[type='range']::-moz-range-track {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    var(--border) 25%,
-    var(--border) 75%,
+    color-mix(in srgb, var(--border) 70%, rgba(246, 193, 119, 0.3)) 25%,
+    color-mix(in srgb, var(--border) 70%, rgba(246, 193, 119, 0.3)) 75%,
     transparent 100%
   );
 }
@@ -667,20 +686,70 @@ input[type='range'] {
 .float-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(255, 240, 220, 0.06);
   border-radius: var(--radius-md);
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.15),
-    0 8px 24px rgba(0, 0, 0, 0.2),
-    0 24px 48px rgba(0, 0, 0, 0.12);
+    0 8px 24px rgba(10, 6, 2, 0.22),
+    0 24px 48px rgba(10, 6, 2, 0.14),
+    inset 0 1px 0 rgba(246, 193, 119, 0.03);
   transition: box-shadow 0.3s, border-color 0.3s, transform 0.3s;
 }
 
 .float-card:hover {
   box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.2),
-    0 12px 32px rgba(0, 0, 0, 0.25),
-    0 32px 56px rgba(0, 0, 0, 0.15);
+    0 2px 4px rgba(10, 6, 2, 0.22),
+    0 12px 32px rgba(10, 6, 2, 0.28),
+    0 32px 56px rgba(10, 6, 2, 0.16),
+    inset 0 1px 0 rgba(246, 193, 119, 0.05);
+}
+
+/* ── Lofi warm glow utility ── */
+.lofi-glow {
+  box-shadow:
+    0 0 40px -10px rgba(246, 193, 119, 0.08),
+    0 0 80px -20px rgba(234, 154, 151, 0.05);
+}
+
+/* ── Reusable grain texture overlay ── */
+.grain-overlay {
+  position: relative;
+}
+
+.grain-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 128 128' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+/* ── Warm gradient border utility ── */
+.warm-border {
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+}
+
+.warm-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(246, 193, 119, 0.12) 0%,
+    rgba(234, 154, 151, 0.08) 50%,
+    rgba(196, 167, 231, 0.06) 100%
+  );
+  z-index: -1;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  padding: 1px;
 }
 
 /* ── Status dot pulse for ready cards ── */
