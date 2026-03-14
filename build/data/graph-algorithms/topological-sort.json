@@ -1,0 +1,63 @@
+{
+  "id": "topological-sort",
+  "categoryId": "graph-algorithms",
+  "title": "Topological Sort",
+  "pageTitle": "Topological Sort — CS Animations",
+  "subtitle": "Order vertices of a directed acyclic graph (DAG) so that every edge goes from earlier to later in the ordering. Uses Kahn's BFS-based algorithm.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine"
+    ],
+    "animation": "topological-sort.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnPlay",
+      "label": "&#9654; Start",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnStep",
+      "label": "Step"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    }
+  ],
+  "complexity": [
+    "Time: <code>O(V + E)</code>",
+    "Space: <code>O(V)</code>"
+  ],
+  "complexityNote": "Only works on DAGs (directed acyclic graphs). Used for task scheduling, build systems, and course prerequisites.",
+  "steps": [
+    "Compute in-degree for every vertex",
+    "Enqueue all vertices with in-degree 0",
+    "Dequeue a vertex, add it to the result",
+    "Decrement in-degrees of its neighbors",
+    "Enqueue any neighbor whose in-degree reaches 0"
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "id": "heap-sort",
+  "categoryId": "sorting-algorithms",
+  "title": "Heap Sort",
+  "pageTitle": "Heap Sort — CS Animations",
+  "subtitle": "Build a max-heap from the array, then repeatedly extract the maximum element and place it at the end.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine",
+      "bar-renderer"
+    ],
+    "animation": "heap-sort.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnPlay",
+      "label": "▶ Play",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnStep",
+      "label": "Step"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "sizeSlider",
+      "label": "Size",
+      "min": 8,
+      "max": 64,
+      "value": 24
+    }
+  ],
+  "complexity": [
+    "Time: <code>O(n log n)</code> worst / average / best",
+    "Space: <code>O(1)</code> auxiliary"
+  ],
+  "complexityNote": "Not stable — equal elements may change relative order.",
+  "steps": [
+    "Build a max-heap from the unsorted array",
+    "Swap root (maximum) with last unsorted element",
+    "Reduce heap size by one",
+    "Heapify the root down to restore heap property",
+    "Repeat until the heap is empty"
+  ]
+}

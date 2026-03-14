@@ -1,0 +1,76 @@
+{
+  "id": "binary-search",
+  "categoryId": "search-algorithms",
+  "title": "Binary Search",
+  "pageTitle": "Binary Search — CS Animations",
+  "subtitle": "Efficiently find a target value in a sorted array by repeatedly halving the search range.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine",
+      "bar-renderer"
+    ],
+    "animation": "binary-search.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnSearch",
+      "label": "Search",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnStep",
+      "label": "Step"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "sizeSlider",
+      "label": "Size",
+      "min": 8,
+      "max": 64,
+      "value": 24
+    }
+  ],
+  "complexity": [
+    "Time: <code>O(log n)</code> worst / average",
+    "Time: <code>O(1)</code> best (target at midpoint)",
+    "Space: <code>O(1)</code> auxiliary"
+  ],
+  "complexityNote": "Requires sorted input. Divide-and-conquer strategy.",
+  "steps": [
+    "Set low = 0 and high = n - 1",
+    "Compute mid = floor((low + high) / 2)",
+    "Compare target with arr[mid]",
+    "If equal, found. If target < mid, search left half",
+    "If target > mid, search right half. Repeat."
+  ]
+}

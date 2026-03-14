@@ -17,8 +17,8 @@
 /.next/
 /out/
 
-# production
-/build
+# production output (not our build/ template system)
+# /build
 
 # misc
 .DS_Store

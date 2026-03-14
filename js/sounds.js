@@ -184,11 +184,6 @@ window.LofiSounds = (function () {
       richTone(784.0, 0.3, t + 0.1);  // G5
     },
 
-    // Error/reject — soft low tone
-    reject: function () {
-      warmTone(220, 0.2, 'triangle');
-    },
-
     // Set master volume (0-1)
     setVolume: function (v) {
       volume = Math.max(0, Math.min(1, v));
@@ -199,11 +194,6 @@ window.LofiSounds = (function () {
     toggle: function () {
       muted = !muted;
       return !muted; // returns true if sound is ON
-    },
-
-    // Check if muted
-    isMuted: function () {
-      return muted;
     },
 
     // Initialize on first user interaction
@@ -236,7 +226,7 @@ window.LofiSounds = (function () {
       } else if (t === 'found' || t === 'path') {
         this.found();
       } else if (t === 'reject' || t === 'not-found') {
-        this.reject();
+        this.compare(0.2);
       } else if (t === 'pivot' || t === 'range' || t === 'pool' || t === 'updateWeights'
                  || t === 'computeLoss' || t === 'update-dist' || t === 'decrement'
                  || t === 'close' || t === 'clear-candidates' || t === 'pop'

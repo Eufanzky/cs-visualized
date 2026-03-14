@@ -1,0 +1,63 @@
+{
+  "id": "bfs",
+  "categoryId": "search-algorithms",
+  "title": "Breadth-First Search",
+  "pageTitle": "Breadth-First Search — CS Animations",
+  "subtitle": "Explore a graph level by level, visiting all neighbors before moving deeper.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine"
+    ],
+    "animation": "bfs.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnPlay",
+      "label": "&#9654; Start BFS",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnStep",
+      "label": "Step"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    }
+  ],
+  "complexity": [
+    "Time: <code>O(V + E)</code>",
+    "Space: <code>O(V)</code>"
+  ],
+  "complexityNote": "Finds shortest path in unweighted graphs. Uses a queue (FIFO).",
+  "steps": [
+    "Enqueue the start node, mark as visited",
+    "Dequeue a node, process it",
+    "Enqueue all unvisited neighbors",
+    "Repeat until queue is empty",
+    "All reachable nodes are visited level by level"
+  ]
+}

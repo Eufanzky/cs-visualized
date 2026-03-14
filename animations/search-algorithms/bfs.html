@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600&family=Instrument+Serif&display=swap">
   <title>Breadth-First Search — CS Animations</title>
   <link rel="stylesheet" href="../../css/styles.css">
 </head>
@@ -45,7 +48,7 @@
     </div>
 
     <div class="controls">
-      <button class="controls__btn controls__btn--primary" id="btnPlay">&#9654; Start BFS</button>
+            <button class="controls__btn controls__btn--primary" id="btnPlay">&#9654; Start BFS</button>
       <button class="controls__btn" id="btnStep">Step</button>
       <button class="controls__btn" id="btnReset">Reset</button>
       <div class="controls__separator"></div>
@@ -59,7 +62,7 @@
       <div class="info-block">
         <h4 class="info-block__title">Complexity</h4>
         <div class="info-block__content">
-          <p>Time: <code>O(V + E)</code></p>
+                    <p>Time: <code>O(V + E)</code></p>
           <p>Space: <code>O(V)</code></p>
           <p style="margin-top:0.75rem; color: var(--text-muted);">Finds shortest path in unweighted graphs. Uses a queue (FIFO).</p>
         </div>
@@ -67,7 +70,7 @@
       <div class="info-block">
         <h4 class="info-block__title">How It Works</h4>
         <div class="info-block__content">
-          <div class="step"><span class="step-num">01</span> Enqueue the start node, mark as visited</div>
+                    <div class="step"><span class="step-num">01</span> Enqueue the start node, mark as visited</div>
           <div class="step"><span class="step-num">02</span> Dequeue a node, process it</div>
           <div class="step"><span class="step-num">03</span> Enqueue all unvisited neighbors</div>
           <div class="step"><span class="step-num">04</span> Repeat until queue is empty</div>
@@ -81,377 +84,11 @@
     cs_animations — built for learning
   </footer>
 
+    <script src="../../js/colors.js"></script>
+  <script src="../../js/canvas-utils.js"></script>
   <script src="../../js/sounds.js"></script>
-  <script>
-  (function () {
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    let running = false;
-    let speed = 50;
-    let stepQueue = [];
-
-    // ── Colors ──
-    const C = {
-      primary:   '#c8a4d4',
-      accent:    '#e4c08a',
-      success:   '#9cc49a',
-      error:     '#d48a8a',
-      text:      '#ede6db',
-      textMuted: '#8a7e74',
-      bg:        '#231f1c',
-      surface:   '#2d2824',
-      border:    '#4a403a',
-      barDefault:'#4a403a',
-      barTop:    '#5a4e46',
-    };
-
-    // ── Graph ──
-    const NUM_NODES = 10;
-    let adjList = [];
-    let nodePositions = [];
-    let nodeStates = []; // 'unvisited', 'queued', 'visiting', 'visited'
-    let queue = [];
-    let edgeHighlight = null; // {from, to}
-    let statusText = 'ready';
-
-    // Fixed node positions (roughly circular / clear layout)
-    function initPositions(w, h) {
-      const cx = w * 0.5;
-      const cy = h * 0.38;
-      const rx = Math.min(w * 0.32, 200);
-      const ry = Math.min(h * 0.28, 140);
-      nodePositions = [];
-      for (let i = 0; i < NUM_NODES; i++) {
-        const angle = (2 * Math.PI * i) / NUM_NODES - Math.PI / 2;
-        nodePositions.push({
-          x: cx + rx * Math.cos(angle),
-          y: cy + ry * Math.sin(angle)
-        });
-      }
-    }
-
-    function generateGraph() {
-      adjList = Array.from({ length: NUM_NODES }, () => []);
-      // Build a spanning tree first to ensure connectivity
-      const nodes = Array.from({ length: NUM_NODES }, (_, i) => i);
-      // Shuffle
-      for (let i = nodes.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [nodes[i], nodes[j]] = [nodes[j], nodes[i]];
-      }
-      for (let i = 1; i < NUM_NODES; i++) {
-        const a = nodes[i];
-        const b = nodes[Math.floor(Math.random() * i)];
-        addEdge(a, b);
-      }
-      // Add a few random extra edges
-      const extraEdges = 4 + Math.floor(Math.random() * 4);
-      for (let e = 0; e < extraEdges; e++) {
-        const a = Math.floor(Math.random() * NUM_NODES);
-        let b = Math.floor(Math.random() * NUM_NODES);
-        if (a !== b && !adjList[a].includes(b)) {
-          addEdge(a, b);
-        }
-      }
-    }
-
-    function addEdge(a, b) {
-      if (!adjList[a].includes(b)) adjList[a].push(b);
-      if (!adjList[b].includes(a)) adjList[b].push(a);
-    }
-
-    function resetState() {
-      nodeStates = Array(NUM_NODES).fill('unvisited');
-      queue = [];
-      stepQueue = [];
-      edgeHighlight = null;
-      running = false;
-      statusText = 'ready';
-      updatePlayBtn();
-    }
-
-    // ── Canvas sizing ──
-    function resize() {
-      const container = canvas.parentElement;
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = container.clientWidth * dpr;
-      canvas.height = 500 * dpr;
-      ctx.scale(dpr, dpr);
-      canvas.style.width = container.clientWidth + 'px';
-      canvas.style.height = '500px';
-      initPositions(container.clientWidth, 500);
-    }
-
-    // ── Drawing ──
-    function draw() {
-      const w = canvas.clientWidth;
-      const h = 500;
-      ctx.clearRect(0, 0, w, h);
-
-      const nodeRadius = 22;
-
-      // Draw edges
-      for (let i = 0; i < NUM_NODES; i++) {
-        for (const j of adjList[i]) {
-          if (j > i) {
-            const pi = nodePositions[i];
-            const pj = nodePositions[j];
-            ctx.beginPath();
-            ctx.moveTo(pi.x, pi.y);
-            ctx.lineTo(pj.x, pj.y);
-
-            let strokeColor = C.border;
-            let lineWidth = 1.5;
-            if (edgeHighlight && ((edgeHighlight.from === i && edgeHighlight.to === j) ||
-                (edgeHighlight.from === j && edgeHighlight.to === i))) {
-              strokeColor = C.primary;
-              lineWidth = 3;
-            }
-            ctx.strokeStyle = strokeColor;
-            ctx.lineWidth = lineWidth;
-            ctx.stroke();
-          }
-        }
-      }
-
-      // Draw nodes
-      for (let i = 0; i < NUM_NODES; i++) {
-        const p = nodePositions[i];
-        const state = nodeStates[i];
-
-        let fillColor = C.surface;
-        let borderColor = C.border;
-        let textColor = C.textMuted;
-        let glow = false;
-
-        if (state === 'queued') {
-          fillColor = C.accent;
-          borderColor = C.accent;
-          textColor = C.bg;
-          glow = true;
-        } else if (state === 'visiting') {
-          fillColor = C.primary;
-          borderColor = C.primary;
-          textColor = C.bg;
-          glow = true;
-        } else if (state === 'visited') {
-          fillColor = C.success;
-          borderColor = C.success;
-          textColor = C.bg;
-        }
-
-        if (glow) {
-          ctx.shadowColor = fillColor;
-          ctx.shadowBlur = 18;
-        }
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, nodeRadius, 0, Math.PI * 2);
-        ctx.fillStyle = fillColor;
-        ctx.fill();
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-
-        // Label
-        ctx.fillStyle = textColor;
-        ctx.font = 'bold 13px JetBrains Mono, monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('' + i, p.x, p.y);
-      }
-
-      // Draw queue display at bottom
-      drawQueue(w, h);
-
-      // Status
-      ctx.fillStyle = C.textMuted;
-      ctx.font = '11px JetBrains Mono, monospace';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillText('nodes=' + NUM_NODES + '  |  ' + statusText, 20, 20);
-    }
-
-    function drawQueue(w, h) {
-      const queueY = h - 50;
-      const circR = 14;
-      const spacing = 36;
-      const startX = 60;
-
-      ctx.fillStyle = C.textMuted;
-      ctx.font = '10px JetBrains Mono, monospace';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('queue:', 12, queueY);
-
-      for (let i = 0; i < queue.length; i++) {
-        const cx = startX + i * spacing;
-        if (cx + circR > w - 20) break;
-
-        ctx.beginPath();
-        ctx.arc(cx, queueY, circR, 0, Math.PI * 2);
-        ctx.fillStyle = C.accent;
-        ctx.fill();
-
-        ctx.fillStyle = C.bg;
-        ctx.font = 'bold 11px JetBrains Mono, monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('' + queue[i], cx, queueY);
-      }
-    }
-
-    // ── BFS step generation ──
-    function generateSteps() {
-      const steps = [];
-      const visited = new Set();
-      const q = [0];
-      visited.add(0);
-      steps.push({ type: 'enqueue', node: 0 });
-
-      while (q.length > 0) {
-        const node = q.shift();
-        steps.push({ type: 'dequeue', node: node });
-        steps.push({ type: 'visit', node: node });
-
-        // Sort neighbors for deterministic traversal
-        const neighbors = [...adjList[node]].sort((a, b) => a - b);
-        for (const neighbor of neighbors) {
-          steps.push({ type: 'check-edge', from: node, to: neighbor });
-          if (!visited.has(neighbor)) {
-            visited.add(neighbor);
-            q.push(neighbor);
-            steps.push({ type: 'enqueue', node: neighbor });
-          }
-        }
-      }
-      steps.push({ type: 'done' });
-      return steps;
-    }
-
-    // ── Execute step ──
-    function executeStep(step) {
-      LofiSounds.step(step);
-      return new Promise(resolve => {
-        if (step.type === 'enqueue') {
-          queue.push(step.node);
-          nodeStates[step.node] = 'queued';
-          edgeHighlight = null;
-          draw();
-          setTimeout(resolve, getDelay());
-        } else if (step.type === 'dequeue') {
-          queue.shift();
-          edgeHighlight = null;
-          draw();
-          setTimeout(resolve, getDelay() * 0.3);
-        } else if (step.type === 'visit') {
-          nodeStates[step.node] = 'visiting';
-          statusText = 'visiting node ' + step.node;
-          draw();
-          setTimeout(() => {
-            nodeStates[step.node] = 'visited';
-            draw();
-            setTimeout(resolve, getDelay() * 0.3);
-          }, getDelay() * 0.5);
-        } else if (step.type === 'check-edge') {
-          edgeHighlight = { from: step.from, to: step.to };
-          draw();
-          setTimeout(resolve, getDelay() * 0.5);
-        } else if (step.type === 'done') {
-          edgeHighlight = null;
-          statusText = 'complete \u2713';
-          draw();
-          resolve();
-        }
-      });
-    }
-
-    function getDelay() {
-      return Math.max(10, 500 - (speed / 100) * 490);
-    }
-
-    // ── Play/Pause ──
-    async function play() {
-      if (running) {
-        running = false;
-        updatePlayBtn();
-        return;
-      }
-
-      if (stepQueue.length === 0) {
-        resetState();
-        stepQueue = generateSteps();
-        draw();
-      }
-
-      running = true;
-      updatePlayBtn();
-
-      while (stepQueue.length > 0 && running) {
-        const step = stepQueue.shift();
-        await executeStep(step);
-      }
-
-      if (stepQueue.length === 0) {
-        running = false;
-      }
-      updatePlayBtn();
-    }
-
-    async function step() {
-      if (running) return;
-      if (stepQueue.length === 0) {
-        resetState();
-        stepQueue = generateSteps();
-        draw();
-      }
-      if (stepQueue.length > 0) {
-        const s = stepQueue.shift();
-        await executeStep(s);
-      }
-    }
-
-    function updatePlayBtn() {
-      const btn = document.getElementById('btnPlay');
-      btn.textContent = running ? '\u275A\u275A Pause' : '\u25B6 Start BFS';
-    }
-
-    // ── Events ──
-    document.getElementById('btnPlay').addEventListener('click', play);
-    document.getElementById('btnStep').addEventListener('click', step);
-    document.getElementById('btnReset').addEventListener('click', () => {
-      generateGraph();
-      resetState();
-      resize();
-      draw();
-    });
-
-    document.getElementById('speedSlider').addEventListener('input', (e) => {
-      speed = parseInt(e.target.value);
-    });
-
-    window.addEventListener('resize', () => {
-      resize();
-      draw();
-    });
-
-    // ── Init ──
-    resize();
-    generateGraph();
-    resetState();
-    draw();
-  })();
-  </script>
-  <script src="../../js/lofi-music.js"></script>
-  <script>
-    document.getElementById('musicToggle').addEventListener('click', function () {
-      var on = LofiMusic.toggle();
-      this.classList.toggle('is-playing', on);
-      this.title = on ? 'Stop lofi music' : 'Play lofi music';
-    });
-  </script>
+  <script src="../../js/animation-engine.js"></script>
+  <script src="bfs.js"></script>
+  <script src="../../js/lofi-music.js" defer></script>
 </body>
 </html>

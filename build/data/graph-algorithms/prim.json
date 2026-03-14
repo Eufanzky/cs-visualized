@@ -1,0 +1,64 @@
+{
+  "id": "prim",
+  "categoryId": "graph-algorithms",
+  "title": "Prim's Algorithm",
+  "pageTitle": "Prim's Algorithm — CS Animations",
+  "subtitle": "Grow a minimum spanning tree one vertex at a time, always adding the cheapest edge connecting the tree to a new vertex.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine"
+    ],
+    "animation": "prim.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnPlay",
+      "label": "&#9654; Start",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnStep",
+      "label": "Step"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    }
+  ],
+  "complexity": [
+    "Time: <code>O(E log V)</code> with priority queue",
+    "Time: <code>O(V&sup2;)</code> with adjacency matrix",
+    "Space: <code>O(V)</code>"
+  ],
+  "complexityNote": "Greedy algorithm — grows a single tree from the starting vertex.",
+  "steps": [
+    "Start from node 0 and add it to the MST",
+    "Find all edges connecting MST to non-MST vertices",
+    "Select the edge with minimum weight",
+    "Add the new vertex and edge to the MST",
+    "Repeat until all vertices are in the MST"
+  ]
+}

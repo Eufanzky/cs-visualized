@@ -1,0 +1,75 @@
+{
+  "id": "graph",
+  "categoryId": "data-structures",
+  "title": "Graph",
+  "pageTitle": "Graph — CS Animations",
+  "subtitle": "A collection of nodes (vertices) connected by edges — the most versatile structure for modeling relationships.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine"
+    ],
+    "animation": "graph.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnAddNode",
+      "label": "+ Node",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnAddEdge",
+      "label": "+ Edge"
+    },
+    {
+      "type": "button",
+      "id": "btnBFS",
+      "label": "BFS"
+    },
+    {
+      "type": "button",
+      "id": "btnDFS",
+      "label": "DFS"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    }
+  ],
+  "complexity": [
+    "Add vertex: <code>O(1)</code>",
+    "Add edge: <code>O(1)</code>",
+    "BFS/DFS: <code>O(V + E)</code>",
+    "Space: <code>O(V + E)</code> adjacency list"
+  ],
+  "complexityNote": "Adjacency list is space-efficient for sparse graphs.",
+  "steps": [
+    "Vertices store data, edges connect vertices",
+    "BFS explores level by level (uses queue)",
+    "DFS explores as deep as possible first (uses stack)",
+    "Undirected: edges go both ways",
+    "Applications: social networks, maps, dependencies"
+  ]
+}

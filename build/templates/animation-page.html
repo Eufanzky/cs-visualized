@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600&family=Instrument+Serif&display=swap">
+  <title>{{pageTitle}}</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="../../index.html" class="nav__logo">
+      <span>&gt;</span> cs_animations
+    </a>
+    <ul class="nav__links">
+      <li><a href="../../index.html#categories">Browse</a></li>
+    </ul>
+    <div class="nav__music">
+      <button class="nav__music-btn" id="musicToggle" title="Play lofi music">
+        <div class="nav__music-bars">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        lofi
+      </button>
+    </div>
+  </nav>
+
+  <div class="animation-page">
+    <div class="animation-page__header">
+      <div class="animation-page__breadcrumb">
+        <a href="../../index.html">home</a>
+        <span class="sep">/</span>
+        <a href="index.html">{{categoryId}}</a>
+        <span class="sep">/</span>
+        <span>{{id}}</span>
+      </div>
+      <h1 class="animation-page__title">{{title}}</h1>
+      <p class="animation-page__subtitle">
+        {{subtitle}}
+      </p>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="controls">
+      {{controlsHtml}}
+    </div>
+
+    <div class="info-panel">
+      <div class="info-block">
+        <h4 class="info-block__title">Complexity</h4>
+        <div class="info-block__content">
+          {{complexityHtml}}
+        </div>
+      </div>
+      <div class="info-block">
+        <h4 class="info-block__title">How It Works</h4>
+        <div class="info-block__content">
+          {{stepsHtml}}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    cs_animations — built for learning
+  </footer>
+
+  {{scriptsHtml}}
+  <script src="../../js/lofi-music.js" defer></script>
+</body>
+</html>

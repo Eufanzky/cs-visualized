@@ -1,0 +1,63 @@
+{
+  "id": "lcs",
+  "categoryId": "dynamic-programming",
+  "title": "Longest Common Subsequence",
+  "pageTitle": "Longest Common Subsequence — CS Animations",
+  "subtitle": "Find the longest subsequence common to two strings using dynamic programming.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine"
+    ],
+    "animation": "lcs.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnSolve",
+      "label": "&#9654; Solve",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnStep",
+      "label": "Step"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    }
+  ],
+  "complexity": [
+    "Time: <code>O(mn)</code> where m, n are string lengths",
+    "Space: <code>O(mn)</code> for the DP table"
+  ],
+  "complexityNote": "Classic DP problem with applications in diff tools, bioinformatics, and version control.",
+  "steps": [
+    "Build table with rows = chars of A, cols = chars of B",
+    "If chars match: dp[i][j] = dp[i-1][j-1] + 1 (diagonal)",
+    "If not: dp[i][j] = max(dp[i-1][j], dp[i][j-1])",
+    "Bottom-right cell = LCS length",
+    "Backtrack to recover the actual subsequence"
+  ]
+}

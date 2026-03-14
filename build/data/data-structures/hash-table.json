@@ -1,0 +1,69 @@
+{
+  "id": "hash-table",
+  "categoryId": "data-structures",
+  "title": "Hash Table",
+  "pageTitle": "Hash Table — CS Animations",
+  "subtitle": "Maps keys to values using a hash function — achieving near-constant time lookups with collision handling via chaining.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine"
+    ],
+    "animation": "hash-table.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnInsert",
+      "label": "+ Insert",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnLookup",
+      "label": "Lookup"
+    },
+    {
+      "type": "button",
+      "id": "btnDelete",
+      "label": "Delete"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    }
+  ],
+  "complexity": [
+    "Insert: <code>O(1)</code> average, <code>O(n)</code> worst",
+    "Lookup: <code>O(1)</code> average, <code>O(n)</code> worst",
+    "Delete: <code>O(1)</code> average, <code>O(n)</code> worst"
+  ],
+  "complexityNote": "Worst case when all keys collide into the same bucket.",
+  "steps": [
+    "Hash function converts key → bucket index",
+    "Element stored in the computed bucket",
+    "Collisions: multiple keys map to same bucket",
+    "Separate chaining: bucket holds a linked list",
+    "Good hash function distributes keys uniformly"
+  ]
+}

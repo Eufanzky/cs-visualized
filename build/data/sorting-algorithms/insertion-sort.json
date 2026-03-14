@@ -1,0 +1,76 @@
+{
+  "id": "insertion-sort",
+  "categoryId": "sorting-algorithms",
+  "title": "Insertion Sort",
+  "pageTitle": "Insertion Sort — CS Animations",
+  "subtitle": "Build a sorted portion one element at a time by inserting each new element into its correct position.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine",
+      "bar-renderer"
+    ],
+    "animation": "insertion-sort.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnPlay",
+      "label": "▶ Play",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnStep",
+      "label": "Step"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "sizeSlider",
+      "label": "Size",
+      "min": 8,
+      "max": 64,
+      "value": 24
+    }
+  ],
+  "complexity": [
+    "Time: <code>O(n²)</code> worst / average",
+    "Time: <code>O(n)</code> best (already sorted)",
+    "Space: <code>O(1)</code> auxiliary"
+  ],
+  "complexityNote": "Stable sort — equal elements maintain relative order.",
+  "steps": [
+    "Take the next unsorted element",
+    "Compare with sorted portion from right to left",
+    "Shift larger elements one position right",
+    "Insert the element in its correct position",
+    "Repeat until the entire array is sorted"
+  ]
+}

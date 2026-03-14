@@ -1,0 +1,70 @@
+{
+  "id": "queue",
+  "categoryId": "data-structures",
+  "title": "Queue",
+  "pageTitle": "Queue — CS Animations",
+  "subtitle": "A First-In, First-Out (FIFO) collection — elements are added at the rear and removed from the front.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine"
+    ],
+    "animation": "queue.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnEnqueue",
+      "label": "Enqueue",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnDequeue",
+      "label": "Dequeue"
+    },
+    {
+      "type": "button",
+      "id": "btnPeek",
+      "label": "Peek"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    }
+  ],
+  "complexity": [
+    "Enqueue: <code>O(1)</code>",
+    "Dequeue: <code>O(1)</code>",
+    "Peek: <code>O(1)</code>",
+    "Search: <code>O(n)</code>"
+  ],
+  "complexityNote": "Used in BFS, task scheduling, and buffering.",
+  "steps": [
+    "Enqueue adds element to the REAR",
+    "Dequeue removes element from the FRONT",
+    "Peek returns front element without removing",
+    "Maintains insertion order (FIFO)",
+    "Can be implemented with array or linked list"
+  ]
+}

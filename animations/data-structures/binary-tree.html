@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600&family=Instrument+Serif&display=swap">
   <title>Binary Search Tree — CS Animations</title>
   <link rel="stylesheet" href="../../css/styles.css">
 </head>
@@ -45,7 +48,7 @@
     </div>
 
     <div class="controls">
-      <button class="controls__btn controls__btn--primary" id="btnInsert">+ Insert</button>
+            <button class="controls__btn controls__btn--primary" id="btnInsert">+ Insert</button>
       <button class="controls__btn" id="btnDelete">Delete</button>
       <button class="controls__btn" id="btnSearch">Search</button>
       <button class="controls__btn" id="btnReset">Reset</button>
@@ -60,7 +63,7 @@
       <div class="info-block">
         <h4 class="info-block__title">Complexity</h4>
         <div class="info-block__content">
-          <p>Search: <code>O(log n)</code> average, <code>O(n)</code> worst</p>
+                    <p>Search: <code>O(log n)</code> average, <code>O(n)</code> worst</p>
           <p>Insert: <code>O(log n)</code> average, <code>O(n)</code> worst</p>
           <p>Delete: <code>O(log n)</code> average, <code>O(n)</code> worst</p>
           <p style="margin-top:0.75rem; color: var(--text-muted);">Worst case occurs when tree degenerates into a linked list.</p>
@@ -69,7 +72,7 @@
       <div class="info-block">
         <h4 class="info-block__title">How It Works</h4>
         <div class="info-block__content">
-          <div class="step"><span class="step-num">01</span> Each node has at most two children (left, right)</div>
+                    <div class="step"><span class="step-num">01</span> Each node has at most two children (left, right)</div>
           <div class="step"><span class="step-num">02</span> Left subtree values &lt; node value</div>
           <div class="step"><span class="step-num">03</span> Right subtree values &gt; node value</div>
           <div class="step"><span class="step-num">04</span> Search: compare and go left or right</div>
@@ -83,391 +86,11 @@
     cs_animations — built for learning
   </footer>
 
+    <script src="../../js/colors.js"></script>
+  <script src="../../js/canvas-utils.js"></script>
   <script src="../../js/sounds.js"></script>
-  <script>
-  (function () {
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-
-    const COLORS = {
-      primary:   '#c8a4d4',
-      secondary: '#e8b4a8',
-      accent:    '#e4c08a',
-      highlight: '#8fbfb0',
-      success:   '#9cc49a',
-      text:      '#ede6db',
-      textMuted: '#8a7e74',
-      bg:        '#231f1c',
-      surface:   '#2d2824',
-      border:    '#4a403a',
-    };
-
-    // BST Node
-    function BSTNode(val) {
-      this.val = val;
-      this.left = null;
-      this.right = null;
-    }
-
-    let root = null;
-    let speed = 50;
-    let animating = false;
-    let visitedNodes = new Set();
-    let foundNode = null;
-    let insertedNode = null;
-    let statusText = 'ready';
-    let nodePositions = new Map(); // node -> {x, y}
-
-    function easeInOutCubic(t) {
-      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    }
-
-    function getDelay() {
-      return Math.max(10, 500 - (speed / 100) * 490);
-    }
-
-    function resize() {
-      const container = canvas.parentElement;
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = container.clientWidth * dpr;
-      canvas.height = 500 * dpr;
-      ctx.scale(dpr, dpr);
-      canvas.style.width = container.clientWidth + 'px';
-      canvas.style.height = '500px';
-    }
-
-    function bstInsert(node, val) {
-      if (!node) return new BSTNode(val);
-      if (val < node.val) node.left = bstInsert(node.left, val);
-      else if (val > node.val) node.right = bstInsert(node.right, val);
-      return node;
-    }
-
-    function bstMin(node) {
-      while (node.left) node = node.left;
-      return node;
-    }
-
-    function bstDelete(node, val) {
-      if (!node) return null;
-      if (val < node.val) node.left = bstDelete(node.left, val);
-      else if (val > node.val) node.right = bstDelete(node.right, val);
-      else {
-        if (!node.left) return node.right;
-        if (!node.right) return node.left;
-        const succ = bstMin(node.right);
-        node.val = succ.val;
-        node.right = bstDelete(node.right, succ.val);
-      }
-      return node;
-    }
-
-    function getTreeDepth(node) {
-      if (!node) return 0;
-      return 1 + Math.max(getTreeDepth(node.left), getTreeDepth(node.right));
-    }
-
-    function getAllValues(node, arr) {
-      if (!node) return;
-      arr.push(node.val);
-      getAllValues(node.left, arr);
-      getAllValues(node.right, arr);
-    }
-
-    function computePositions(node, x, y, hSpread, positions) {
-      if (!node) return;
-      positions.set(node, { x, y });
-      const vGap = 65;
-      const nextSpread = hSpread * 0.55;
-      if (node.left) computePositions(node.left, x - hSpread, y + vGap, nextSpread, positions);
-      if (node.right) computePositions(node.right, x + hSpread, y + vGap, nextSpread, positions);
-    }
-
-    function generateTree() {
-      root = null;
-      const values = new Set();
-      while (values.size < 7) {
-        values.add(Math.floor(Math.random() * 99) + 1);
-      }
-      const arr = [...values];
-      // Insert in an order that produces a balanced-ish tree
-      arr.sort((a, b) => a - b);
-      function insertBalanced(sorted) {
-        if (sorted.length === 0) return;
-        const mid = Math.floor(sorted.length / 2);
-        root = bstInsert(root, sorted[mid]);
-        insertBalanced(sorted.slice(0, mid));
-        insertBalanced(sorted.slice(mid + 1));
-      }
-      insertBalanced(arr);
-      visitedNodes.clear();
-      foundNode = null;
-      insertedNode = null;
-      animating = false;
-      statusText = 'ready';
-      draw();
-    }
-
-    function draw() {
-      const w = canvas.clientWidth;
-      const h = 500;
-      ctx.clearRect(0, 0, w, h);
-
-      if (!root) {
-        ctx.fillStyle = COLORS.textMuted;
-        ctx.font = '14px JetBrains Mono, monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('Empty tree — insert a node to begin', w / 2, h / 2);
-        drawStatus(w);
-        return;
-      }
-
-      const depth = getTreeDepth(root);
-      const hSpread = Math.min(w * 0.25, 160);
-      nodePositions = new Map();
-      computePositions(root, w / 2, 70, hSpread, nodePositions);
-
-      const nodeRadius = 22;
-
-      // Draw edges first
-      function drawEdges(node) {
-        if (!node) return;
-        const p = nodePositions.get(node);
-        if (node.left) {
-          const lp = nodePositions.get(node.left);
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y + nodeRadius);
-          ctx.lineTo(lp.x, lp.y - nodeRadius);
-          ctx.strokeStyle = COLORS.border;
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-        if (node.right) {
-          const rp = nodePositions.get(node.right);
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y + nodeRadius);
-          ctx.lineTo(rp.x, rp.y - nodeRadius);
-          ctx.strokeStyle = COLORS.border;
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-        drawEdges(node.left);
-        drawEdges(node.right);
-      }
-      drawEdges(root);
-
-      // Draw nodes
-      function drawNodes(node) {
-        if (!node) return;
-        const p = nodePositions.get(node);
-        let fillColor = COLORS.surface;
-        let borderColor = COLORS.border;
-        let glowing = false;
-
-        if (visitedNodes.has(node)) {
-          fillColor = COLORS.primary;
-          borderColor = COLORS.primary;
-          glowing = true;
-        }
-        if (foundNode === node) {
-          fillColor = COLORS.success;
-          borderColor = COLORS.success;
-          glowing = true;
-        }
-        if (insertedNode === node) {
-          fillColor = COLORS.accent;
-          borderColor = COLORS.accent;
-          glowing = true;
-        }
-
-        if (glowing) {
-          ctx.shadowColor = fillColor;
-          ctx.shadowBlur = 16;
-        }
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, nodeRadius, 0, Math.PI * 2);
-        ctx.fillStyle = fillColor;
-        ctx.fill();
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-
-        ctx.fillStyle = COLORS.text;
-        ctx.font = 'bold 14px JetBrains Mono, monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(node.val, p.x, p.y);
-
-        drawNodes(node.left);
-        drawNodes(node.right);
-      }
-      drawNodes(root);
-
-      drawStatus(w);
-    }
-
-    function drawStatus(w) {
-      ctx.fillStyle = COLORS.textMuted;
-      ctx.font = '11px JetBrains Mono, monospace';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      const vals = [];
-      getAllValues(root, vals);
-      ctx.fillText(`nodes=${vals.length}  depth=${getTreeDepth(root)}  |  ${statusText}`, 40, 24);
-    }
-
-    async function insertValue() {
-      LofiSounds.init(); LofiSounds.insert(0.5);
-      if (animating) return;
-      animating = true;
-      let val;
-      const existing = [];
-      getAllValues(root, existing);
-      do {
-        val = Math.floor(Math.random() * 99) + 1;
-      } while (existing.includes(val));
-
-      visitedNodes.clear();
-      foundNode = null;
-      insertedNode = null;
-
-      // Animate traversal
-      let node = root;
-      statusText = `inserting ${val}...`;
-      while (node) {
-        visitedNodes.add(node);
-        draw();
-        await new Promise(r => setTimeout(r, getDelay() * 4));
-        if (val < node.val) node = node.left;
-        else node = node.right;
-      }
-
-      root = bstInsert(root, val);
-
-      // Find the inserted node
-      function findNode(n, v) {
-        if (!n) return null;
-        if (n.val === v) return n;
-        return v < n.val ? findNode(n.left, v) : findNode(n.right, v);
-      }
-      insertedNode = findNode(root, val);
-      visitedNodes.clear();
-      statusText = `inserted ${val}`;
-      draw();
-      await new Promise(r => setTimeout(r, getDelay() * 6));
-      insertedNode = null;
-      draw();
-      animating = false;
-    }
-
-    async function deleteValue() {
-      LofiSounds.init(); LofiSounds.remove();
-      if (animating) return;
-      const vals = [];
-      getAllValues(root, vals);
-      if (vals.length === 0) return;
-      animating = true;
-
-      const val = vals[Math.floor(Math.random() * vals.length)];
-      visitedNodes.clear();
-      foundNode = null;
-      insertedNode = null;
-      statusText = `deleting ${val}...`;
-
-      // Traverse to find it
-      let node = root;
-      while (node) {
-        visitedNodes.add(node);
-        draw();
-        await new Promise(r => setTimeout(r, getDelay() * 4));
-        if (val === node.val) {
-          foundNode = node;
-          statusText = `found ${val}, removing...`;
-          draw();
-          await new Promise(r => setTimeout(r, getDelay() * 4));
-          break;
-        }
-        node = val < node.val ? node.left : node.right;
-      }
-
-      root = bstDelete(root, val);
-      visitedNodes.clear();
-      foundNode = null;
-      statusText = `deleted ${val}`;
-      draw();
-      animating = false;
-    }
-
-    async function searchValue() {
-      LofiSounds.init(); LofiSounds.visit(0.6);
-      if (animating) return;
-      const vals = [];
-      getAllValues(root, vals);
-      if (vals.length === 0) return;
-      animating = true;
-
-      // Sometimes search for a value that exists, sometimes not
-      const target = Math.random() < 0.7
-        ? vals[Math.floor(Math.random() * vals.length)]
-        : Math.floor(Math.random() * 99) + 1;
-
-      visitedNodes.clear();
-      foundNode = null;
-      insertedNode = null;
-      statusText = `searching for ${target}...`;
-
-      let node = root;
-      while (node) {
-        visitedNodes.add(node);
-        draw();
-        await new Promise(r => setTimeout(r, getDelay() * 5));
-
-        if (target === node.val) {
-          foundNode = node;
-          statusText = `found ${target}!`;
-          draw();
-          await new Promise(r => setTimeout(r, getDelay() * 8));
-          foundNode = null;
-          visitedNodes.clear();
-          draw();
-          animating = false;
-          return;
-        }
-        node = target < node.val ? node.left : node.right;
-      }
-
-      visitedNodes.clear();
-      statusText = `${target} not found`;
-      draw();
-      animating = false;
-    }
-
-    // Events
-    document.getElementById('btnInsert').addEventListener('click', insertValue);
-    document.getElementById('btnDelete').addEventListener('click', deleteValue);
-    document.getElementById('btnSearch').addEventListener('click', searchValue);
-    document.getElementById('btnReset').addEventListener('click', generateTree);
-    document.getElementById('speedSlider').addEventListener('input', (e) => {
-      speed = parseInt(e.target.value);
-    });
-
-    window.addEventListener('resize', () => { resize(); draw(); });
-
-    resize();
-    generateTree();
-  })();
-  </script>
-  <script src="../../js/lofi-music.js"></script>
-  <script>
-    document.getElementById('musicToggle').addEventListener('click', function () {
-      var on = LofiMusic.toggle();
-      this.classList.toggle('is-playing', on);
-      this.title = on ? 'Stop lofi music' : 'Play lofi music';
-    });
-  </script>
+  <script src="../../js/animation-engine.js"></script>
+  <script src="binary-tree.js"></script>
+  <script src="../../js/lofi-music.js" defer></script>
 </body>
 </html>

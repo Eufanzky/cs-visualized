@@ -249,3 +249,23 @@ window.LofiMusic = (function () {
     }
   };
 })();
+
+// ── Auto-wire music toggle button ──
+(function () {
+  function wire() {
+    var btn = document.getElementById('musicToggle');
+    if (btn && !btn._lofiWired) {
+      btn._lofiWired = true;
+      btn.addEventListener('click', function () {
+        var on = LofiMusic.toggle();
+        btn.classList.toggle('is-playing', on);
+        btn.title = on ? 'Stop lofi music' : 'Play lofi music';
+      });
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', wire);
+  } else {
+    wire();
+  }
+})();

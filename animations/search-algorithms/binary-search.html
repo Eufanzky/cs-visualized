@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600&family=Instrument+Serif&display=swap">
   <title>Binary Search — CS Animations</title>
   <link rel="stylesheet" href="../../css/styles.css">
 </head>
@@ -45,7 +48,7 @@
     </div>
 
     <div class="controls">
-      <button class="controls__btn controls__btn--primary" id="btnSearch">Search</button>
+            <button class="controls__btn controls__btn--primary" id="btnSearch">Search</button>
       <button class="controls__btn" id="btnStep">Step</button>
       <button class="controls__btn" id="btnReset">Reset</button>
       <div class="controls__separator"></div>
@@ -62,7 +65,7 @@
       <div class="info-block">
         <h4 class="info-block__title">Complexity</h4>
         <div class="info-block__content">
-          <p>Time: <code>O(log n)</code> worst / average</p>
+                    <p>Time: <code>O(log n)</code> worst / average</p>
           <p>Time: <code>O(1)</code> best (target at midpoint)</p>
           <p>Space: <code>O(1)</code> auxiliary</p>
           <p style="margin-top:0.75rem; color: var(--text-muted);">Requires sorted input. Divide-and-conquer strategy.</p>
@@ -71,7 +74,7 @@
       <div class="info-block">
         <h4 class="info-block__title">How It Works</h4>
         <div class="info-block__content">
-          <div class="step"><span class="step-num">01</span> Set low = 0 and high = n - 1</div>
+                    <div class="step"><span class="step-num">01</span> Set low = 0 and high = n - 1</div>
           <div class="step"><span class="step-num">02</span> Compute mid = floor((low + high) / 2)</div>
           <div class="step"><span class="step-num">03</span> Compare target with arr[mid]</div>
           <div class="step"><span class="step-num">04</span> If equal, found. If target < mid, search left half</div>
@@ -85,343 +88,12 @@
     cs_animations — built for learning
   </footer>
 
+    <script src="../../js/colors.js"></script>
+  <script src="../../js/canvas-utils.js"></script>
   <script src="../../js/sounds.js"></script>
-  <script>
-  (function () {
-    // ── State ──
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    let arr = [];
-    let n = 24;
-    let searching = false;
-    let speed = 50;
-    let stepQueue = [];
-    let target = -1;
-    let lowIdx = -1;
-    let highIdx = -1;
-    let midIdx = -1;
-    let foundIdx = -1;
-    let notFound = false;
-    let eliminated = new Set();
-
-    // ── Colors ──
-    const C = {
-      bar:       '#4a403a',
-      barTop:    '#5a4e46',
-      primary:   '#c8a4d4',
-      accent:    '#e4c08a',
-      success:   '#9cc49a',
-      error:     '#d48a8a',
-      text:      '#ede6db',
-      textMuted: '#8a7e74',
-      bg:        '#231f1c',
-      surface:   '#2d2824',
-      dimmed:    '#2a2540',
-    };
-
-    // ── Canvas sizing ──
-    function resize() {
-      const container = canvas.parentElement;
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = container.clientWidth * dpr;
-      canvas.height = 500 * dpr;
-      ctx.scale(dpr, dpr);
-      canvas.style.width = container.clientWidth + 'px';
-      canvas.style.height = '500px';
-    }
-
-    // ── Array generation ──
-    function generateArray(size) {
-      n = size;
-      arr = [];
-      for (let i = 0; i < n; i++) {
-        arr.push(Math.random() * 0.85 + 0.1);
-      }
-      arr.sort((a, b) => a - b);
-      resetState();
-      draw();
-    }
-
-    function resetState() {
-      stepQueue = [];
-      searching = false;
-      target = -1;
-      lowIdx = -1;
-      highIdx = -1;
-      midIdx = -1;
-      foundIdx = -1;
-      notFound = false;
-      eliminated = new Set();
-      updateSearchBtn();
-    }
-
-    // ── Drawing ──
-    function draw() {
-      const w = canvas.clientWidth;
-      const h = 500;
-      ctx.clearRect(0, 0, w, h);
-
-      const padding = 40;
-      const gap = 2;
-      const totalGaps = (n - 1) * gap;
-      const barWidth = (w - padding * 2 - totalGaps) / n;
-      const maxBarHeight = h - padding * 2 - 50;
-
-      for (let i = 0; i < arr.length; i++) {
-        const x = padding + i * (barWidth + gap);
-        const barH = arr[i] * maxBarHeight;
-        const y = h - padding - 30 - barH;
-
-        let color = C.bar;
-        let topColor = C.barTop;
-        let glow = false;
-
-        if (eliminated.has(i)) {
-          color = C.dimmed;
-          topColor = C.dimmed;
-        }
-
-        if (i === foundIdx) {
-          color = C.success;
-          topColor = C.success;
-          glow = true;
-        } else if (i === midIdx && foundIdx === -1) {
-          color = C.primary;
-          topColor = C.primary;
-          glow = true;
-        }
-
-        if (notFound && foundIdx === -1) {
-          if (i === midIdx) {
-            color = C.error;
-            topColor = C.error;
-            glow = true;
-          }
-        }
-
-        if (glow) {
-          ctx.shadowColor = color;
-          ctx.shadowBlur = 20;
-        }
-
-        const radius = Math.min(barWidth / 2, 4);
-        ctx.beginPath();
-        ctx.moveTo(x + radius, y);
-        ctx.lineTo(x + barWidth - radius, y);
-        ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + radius);
-        ctx.lineTo(x + barWidth, y + barH);
-        ctx.lineTo(x, y + barH);
-        ctx.lineTo(x, y + radius);
-        ctx.quadraticCurveTo(x, y, x + radius, y);
-        ctx.closePath();
-
-        const grad = ctx.createLinearGradient(x, y, x, y + barH);
-        grad.addColorStop(0, topColor);
-        grad.addColorStop(1, color);
-        ctx.fillStyle = grad;
-        ctx.fill();
-
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-
-        // Value labels
-        if (barWidth > 18) {
-          ctx.fillStyle = eliminated.has(i) ? C.dimmed : C.textMuted;
-          ctx.font = Math.min(10, barWidth * 0.4) + 'px JetBrains Mono, monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText(Math.round(arr[i] * 100), x + barWidth / 2, h - padding - 10);
-        }
-      }
-
-      // Low/High/Mid pointer labels
-      if (lowIdx >= 0 && highIdx >= 0 && foundIdx === -1 && !notFound) {
-        const labelY = h - padding + 8;
-        ctx.font = '10px JetBrains Mono, monospace';
-        ctx.textAlign = 'center';
-
-        // Low pointer
-        const lowX = padding + lowIdx * (barWidth + gap) + barWidth / 2;
-        ctx.fillStyle = C.accent;
-        ctx.fillText('L', lowX, labelY);
-
-        // High pointer
-        const highX = padding + highIdx * (barWidth + gap) + barWidth / 2;
-        ctx.fillStyle = C.accent;
-        ctx.fillText('H', highX, labelY);
-
-        // Mid pointer
-        if (midIdx >= 0) {
-          const midX = padding + midIdx * (barWidth + gap) + barWidth / 2;
-          ctx.fillStyle = C.primary;
-          ctx.fillText('M', midX, labelY);
-        }
-      }
-
-      // Status text
-      ctx.fillStyle = C.textMuted;
-      ctx.font = '11px JetBrains Mono, monospace';
-      ctx.textAlign = 'left';
-
-      let status = 'ready';
-      if (searching) status = 'searching...';
-      if (foundIdx >= 0) status = 'found at index ' + foundIdx + ' \u2713';
-      if (notFound) status = 'not found \u2717';
-
-      ctx.fillText('n=' + n + '  |  ' + status, padding, 24);
-
-      if (target >= 0) {
-        ctx.fillStyle = C.primary;
-        ctx.textAlign = 'right';
-        ctx.fillText('target: ' + Math.round(target * 100), w - padding, 24);
-      }
-    }
-
-    // ── Step generation ──
-    function generateSteps() {
-      const steps = [];
-      // Pick a random target — 70% chance it exists in array
-      if (Math.random() < 0.7) {
-        const idx = Math.floor(Math.random() * n);
-        target = arr[idx];
-      } else {
-        target = Math.random() * 0.85 + 0.1;
-      }
-
-      let lo = 0, hi = n - 1;
-      while (lo <= hi) {
-        const mid = Math.floor((lo + hi) / 2);
-        steps.push({ type: 'range', low: lo, high: hi, mid: mid });
-        if (arr[mid] === target) {
-          steps.push({ type: 'found', index: mid });
-          return steps;
-        } else if (arr[mid] < target) {
-          steps.push({ type: 'eliminate', from: lo, to: mid });
-          lo = mid + 1;
-        } else {
-          steps.push({ type: 'eliminate', from: mid, to: hi });
-          hi = mid - 1;
-        }
-      }
-      steps.push({ type: 'not-found' });
-      return steps;
-    }
-
-    // ── Execute step ──
-    function executeStep(step) {
-      LofiSounds.step(step);
-      return new Promise(resolve => {
-        if (step.type === 'range') {
-          lowIdx = step.low;
-          highIdx = step.high;
-          midIdx = step.mid;
-          draw();
-          setTimeout(resolve, getDelay());
-        } else if (step.type === 'eliminate') {
-          for (let i = step.from; i <= step.to; i++) {
-            eliminated.add(i);
-          }
-          draw();
-          setTimeout(resolve, getDelay() * 0.5);
-        } else if (step.type === 'found') {
-          foundIdx = step.index;
-          midIdx = -1;
-          draw();
-          setTimeout(resolve, getDelay());
-        } else if (step.type === 'not-found') {
-          notFound = true;
-          draw();
-          setTimeout(resolve, getDelay());
-        }
-      });
-    }
-
-    function easeInOutCubic(t) {
-      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    }
-
-    function getDelay() {
-      return Math.max(10, 500 - (speed / 100) * 490);
-    }
-
-    // ── Play ──
-    async function search() {
-      if (searching) {
-        searching = false;
-        updateSearchBtn();
-        return;
-      }
-
-      if (stepQueue.length === 0) {
-        resetState();
-        stepQueue = generateSteps();
-        draw();
-      }
-
-      searching = true;
-      updateSearchBtn();
-
-      while (stepQueue.length > 0 && searching) {
-        const step = stepQueue.shift();
-        await executeStep(step);
-      }
-
-      if (stepQueue.length === 0) {
-        searching = false;
-      }
-      updateSearchBtn();
-    }
-
-    // ── Single step ──
-    async function step() {
-      if (searching) return;
-      if (stepQueue.length === 0) {
-        resetState();
-        stepQueue = generateSteps();
-        draw();
-      }
-      if (stepQueue.length > 0) {
-        const s = stepQueue.shift();
-        await executeStep(s);
-      }
-    }
-
-    function updateSearchBtn() {
-      const btn = document.getElementById('btnSearch');
-      btn.textContent = searching ? '\u275A\u275A Pause' : '\u25B6 Search';
-    }
-
-    // ── Event listeners ──
-    document.getElementById('btnSearch').addEventListener('click', search);
-    document.getElementById('btnStep').addEventListener('click', step);
-    document.getElementById('btnReset').addEventListener('click', () => {
-      generateArray(n);
-    });
-
-    document.getElementById('speedSlider').addEventListener('input', (e) => {
-      speed = parseInt(e.target.value);
-    });
-
-    document.getElementById('sizeSlider').addEventListener('input', (e) => {
-      generateArray(parseInt(e.target.value));
-    });
-
-    window.addEventListener('resize', () => {
-      resize();
-      draw();
-    });
-
-    // ── Init ──
-    resize();
-    generateArray(n);
-  })();
-  </script>
-  <script src="../../js/lofi-music.js"></script>
-  <script>
-    document.getElementById('musicToggle').addEventListener('click', function () {
-      var on = LofiMusic.toggle();
-      this.classList.toggle('is-playing', on);
-      this.title = on ? 'Stop lofi music' : 'Play lofi music';
-    });
-  </script>
+  <script src="../../js/animation-engine.js"></script>
+  <script src="../../js/bar-renderer.js"></script>
+  <script src="binary-search.js"></script>
+  <script src="../../js/lofi-music.js" defer></script>
 </body>
 </html>

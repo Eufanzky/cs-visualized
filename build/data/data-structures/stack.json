@@ -1,0 +1,70 @@
+{
+  "id": "stack",
+  "categoryId": "data-structures",
+  "title": "Stack",
+  "pageTitle": "Stack — CS Animations",
+  "subtitle": "A Last-In, First-Out (LIFO) collection — the most recently added element is the first to be removed.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine"
+    ],
+    "animation": "stack.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnPush",
+      "label": "Push",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnPop",
+      "label": "Pop"
+    },
+    {
+      "type": "button",
+      "id": "btnPeek",
+      "label": "Peek"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    }
+  ],
+  "complexity": [
+    "Push: <code>O(1)</code>",
+    "Pop: <code>O(1)</code>",
+    "Peek: <code>O(1)</code>",
+    "Search: <code>O(n)</code>"
+  ],
+  "complexityNote": "Used in function call stacks, undo operations, and expression parsing.",
+  "steps": [
+    "Push adds element to the top of the stack",
+    "Pop removes and returns the top element",
+    "Peek returns top element without removing",
+    "Only the top element is accessible",
+    "LIFO: Last In, First Out ordering"
+  ]
+}

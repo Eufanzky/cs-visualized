@@ -1,0 +1,63 @@
+{
+  "id": "a-star",
+  "categoryId": "search-algorithms",
+  "title": "A* Search",
+  "pageTitle": "A* Search — CS Animations",
+  "subtitle": "Find the shortest path on a grid using heuristic-guided search that combines cost-so-far with estimated cost-to-goal.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine"
+    ],
+    "animation": "a-star.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnPlay",
+      "label": "&#9654; Start Search",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnStep",
+      "label": "Step"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    }
+  ],
+  "complexity": [
+    "Time: <code>O(E)</code> worst case (E = edges)",
+    "Space: <code>O(V)</code>"
+  ],
+  "complexityNote": "Optimal with admissible heuristic. Combines Dijkstra's algorithm with greedy best-first search.",
+  "steps": [
+    "f(n) = g(n) + h(n) where g = cost so far, h = heuristic",
+    "Add start to open set with f = h(start)",
+    "Pick node with lowest f from open set",
+    "Expand neighbors, update costs if better path found",
+    "Reconstruct path when goal is reached"
+  ]
+}

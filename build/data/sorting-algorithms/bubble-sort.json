@@ -1,0 +1,76 @@
+{
+  "id": "bubble-sort",
+  "categoryId": "sorting-algorithms",
+  "title": "Bubble Sort",
+  "pageTitle": "Bubble Sort — CS Animations",
+  "subtitle": "Repeatedly step through the list, compare adjacent elements, and swap them if they're in the wrong order.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine",
+      "bar-renderer"
+    ],
+    "animation": "bubble-sort.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnPlay",
+      "label": "&#9654; Play",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnStep",
+      "label": "Step"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "sizeSlider",
+      "label": "Size",
+      "min": 8,
+      "max": 64,
+      "value": 24
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    }
+  ],
+  "complexity": [
+    "Time: <code>O(n&sup2;)</code> worst / average",
+    "Time: <code>O(n)</code> best (already sorted)",
+    "Space: <code>O(1)</code> auxiliary"
+  ],
+  "complexityNote": "Stable sort — equal elements maintain relative order.",
+  "steps": [
+    "Compare adjacent elements",
+    "Swap if left > right",
+    "Largest element \"bubbles\" to the end",
+    "Repeat for remaining unsorted portion",
+    "Stop when no swaps occur in a pass"
+  ]
+}

@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600&family=Instrument+Serif&display=swap">
   <title>0/1 Knapsack — CS Animations</title>
   <link rel="stylesheet" href="../../css/styles.css">
 </head>
@@ -45,7 +48,7 @@
     </div>
 
     <div class="controls">
-      <button class="controls__btn controls__btn--primary" id="btnSolve">&#9654; Solve</button>
+            <button class="controls__btn controls__btn--primary" id="btnSolve">&#9654; Solve</button>
       <button class="controls__btn" id="btnStep">Step</button>
       <button class="controls__btn" id="btnReset">Reset</button>
       <div class="controls__separator"></div>
@@ -59,7 +62,7 @@
       <div class="info-block">
         <h4 class="info-block__title">Complexity</h4>
         <div class="info-block__content">
-          <p>Time: <code>O(nW)</code> pseudo-polynomial</p>
+                    <p>Time: <code>O(nW)</code> pseudo-polynomial</p>
           <p>Space: <code>O(nW)</code> for the DP table</p>
           <p style="margin-top:0.75rem; color: var(--text-muted);">NP-hard in general, but DP gives pseudo-polynomial solution when W is small.</p>
         </div>
@@ -67,7 +70,7 @@
       <div class="info-block">
         <h4 class="info-block__title">How It Works</h4>
         <div class="info-block__content">
-          <div class="step"><span class="step-num">01</span> Create table: rows = items, columns = capacities 0..W</div>
+                    <div class="step"><span class="step-num">01</span> Create table: rows = items, columns = capacities 0..W</div>
           <div class="step"><span class="step-num">02</span> For each cell, decide: include item or skip it</div>
           <div class="step"><span class="step-num">03</span> dp[i][w] = max(skip, value[i] + dp[i-1][w-weight[i]])</div>
           <div class="step"><span class="step-num">04</span> Bottom-right cell contains optimal value</div>
@@ -81,314 +84,11 @@
     cs_animations — built for learning
   </footer>
 
+    <script src="../../js/colors.js"></script>
+  <script src="../../js/canvas-utils.js"></script>
   <script src="../../js/sounds.js"></script>
-  <script>
-  (function () {
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-
-    const COLORS = {
-      primary:   '#c8a4d4',
-      accent:    '#e4c08a',
-      success:   '#9cc49a',
-      error:     '#d48a8a',
-      text:      '#ede6db',
-      textMuted: '#8a7e74',
-      bg:        '#231f1c',
-      surface:   '#2d2824',
-      border:    '#4a403a',
-    };
-
-    const W = 10;
-    let items = [];
-    let dp = [];
-    let speed = 50;
-    let running = false;
-    let stepQueue = [];
-    let cellStates = {}; // 'current', 'comparing', 'filled', 'optimal'
-    let cellValues = {};
-
-    function resize() {
-      const container = canvas.parentElement;
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = container.clientWidth * dpr;
-      canvas.height = 500 * dpr;
-      ctx.scale(dpr, dpr);
-      canvas.style.width = container.clientWidth + 'px';
-      canvas.style.height = '500px';
-    }
-
-    function getDelay() {
-      return Math.max(10, 500 - (speed / 100) * 490);
-    }
-
-    function generateItems() {
-      items = [];
-      const count = 5;
-      for (let i = 0; i < count; i++) {
-        items.push({
-          weight: Math.floor(Math.random() * 5) + 1,
-          value: Math.floor(Math.random() * 10) + 1,
-          name: 'Item ' + (i + 1),
-        });
-      }
-    }
-
-    function generateSteps() {
-      const steps = [];
-      const n = items.length;
-      const table = [];
-      for (let i = 0; i <= n; i++) {
-        table[i] = new Array(W + 1).fill(0);
-      }
-
-      // Fill row 0 (all zeros) - no steps needed, already 0
-      for (let w = 0; w <= W; w++) {
-        steps.push({ type: 'fill', row: 0, col: w, value: 0 });
-      }
-
-      for (let i = 1; i <= n; i++) {
-        const item = items[i - 1];
-        for (let w = 0; w <= W; w++) {
-          steps.push({ type: 'current', row: i, col: w });
-
-          if (item.weight <= w) {
-            // Compare skip vs include
-            const skip = table[i - 1][w];
-            const include = item.value + table[i - 1][w - item.weight];
-            steps.push({ type: 'compare', row: i, col: w, compareCells: [[i - 1, w], [i - 1, w - item.weight]] });
-
-            table[i][w] = Math.max(skip, include);
-          } else {
-            table[i][w] = table[i - 1][w];
-            steps.push({ type: 'compare', row: i, col: w, compareCells: [[i - 1, w]] });
-          }
-
-          steps.push({ type: 'fill', row: i, col: w, value: table[i][w] });
-        }
-      }
-
-      // Backtrack
-      let w = W;
-      const optimalPath = [];
-      for (let i = n; i > 0; i--) {
-        if (table[i][w] !== table[i - 1][w]) {
-          optimalPath.push([i, w]);
-          w -= items[i - 1].weight;
-        }
-        optimalPath.push([i - 1, w]);
-      }
-      steps.push({ type: 'optimal', cells: optimalPath });
-
-      return steps;
-    }
-
-    function draw() {
-      const w = canvas.clientWidth;
-      const h = 500;
-      ctx.clearRect(0, 0, w, h);
-
-      const n = items.length;
-      const rows = n + 1;
-      const cols = W + 1;
-      const leftMargin = 100;
-      const topMargin = 50;
-      const cellW = Math.min(32, (w - leftMargin - 40) / cols);
-      const cellH = Math.min(32, (h - topMargin - 60) / rows);
-
-      // Column headers (capacities)
-      ctx.fillStyle = COLORS.textMuted;
-      ctx.font = '10px JetBrains Mono, monospace';
-      ctx.textAlign = 'center';
-      for (let c = 0; c <= W; c++) {
-        ctx.fillText(c, leftMargin + c * cellW + cellW / 2, topMargin - 8);
-      }
-      ctx.fillText('capacity →', leftMargin + (W + 1) * cellW / 2, topMargin - 24);
-
-      // Row labels (items)
-      ctx.textAlign = 'right';
-      ctx.fillText('(none)', leftMargin - 8, topMargin + cellH / 2 + 4);
-      for (let i = 0; i < n; i++) {
-        const y = topMargin + (i + 1) * cellH;
-        ctx.fillStyle = COLORS.text;
-        ctx.fillText('w=' + items[i].weight + ' v=' + items[i].value, leftMargin - 8, y + cellH / 2 + 4);
-      }
-
-      // Draw cells
-      for (let r = 0; r <= n; r++) {
-        for (let c = 0; c <= W; c++) {
-          const x = leftMargin + c * cellW;
-          const y = topMargin + r * cellH;
-          const key = r + ',' + c;
-          const state = cellStates[key];
-
-          let fillColor = COLORS.bg;
-          let borderColor = COLORS.border;
-          let glow = false;
-
-          if (state === 'current') {
-            fillColor = COLORS.primary;
-            borderColor = COLORS.primary;
-            glow = true;
-          } else if (state === 'comparing') {
-            fillColor = COLORS.accent;
-            borderColor = COLORS.accent;
-            glow = true;
-          } else if (state === 'filled') {
-            fillColor = COLORS.surface;
-          } else if (state === 'optimal') {
-            fillColor = COLORS.success;
-            borderColor = COLORS.success;
-            glow = true;
-          }
-
-          if (glow) {
-            ctx.shadowColor = fillColor;
-            ctx.shadowBlur = 10;
-          }
-
-          ctx.fillStyle = fillColor;
-          ctx.fillRect(x + 1, y + 1, cellW - 2, cellH - 2);
-          ctx.strokeStyle = borderColor;
-          ctx.lineWidth = 1;
-          ctx.strokeRect(x + 1, y + 1, cellW - 2, cellH - 2);
-
-          ctx.shadowColor = 'transparent';
-          ctx.shadowBlur = 0;
-
-          // Value text
-          if (cellValues[key] !== undefined) {
-            ctx.fillStyle = (state === 'current' || state === 'optimal') ? COLORS.bg : COLORS.text;
-            ctx.font = '10px JetBrains Mono, monospace';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(cellValues[key], x + cellW / 2, y + cellH / 2);
-          }
-        }
-      }
-      ctx.textBaseline = 'alphabetic';
-
-      // Status
-      ctx.fillStyle = COLORS.textMuted;
-      ctx.font = '11px JetBrains Mono, monospace';
-      ctx.textAlign = 'left';
-      let status = 'ready';
-      if (running) status = 'solving...';
-      if (!running && stepQueue.length === 0 && Object.keys(cellValues).length > 0) status = 'solved';
-      ctx.fillText(items.length + ' items  |  W=' + W + '  |  ' + status, 20, 20);
-    }
-
-    function executeStep(step) {
-      LofiSounds.step(step);
-      return new Promise(resolve => {
-        // Clear previous current/comparing states
-        Object.keys(cellStates).forEach(k => {
-          if (cellStates[k] === 'current' || cellStates[k] === 'comparing') {
-            cellStates[k] = cellValues[k] !== undefined ? 'filled' : undefined;
-          }
-        });
-
-        if (step.type === 'current') {
-          cellStates[step.row + ',' + step.col] = 'current';
-          draw();
-          setTimeout(resolve, getDelay() * 0.5);
-        } else if (step.type === 'compare') {
-          cellStates[step.row + ',' + step.col] = 'current';
-          step.compareCells.forEach(([r, c]) => {
-            cellStates[r + ',' + c] = 'comparing';
-          });
-          draw();
-          setTimeout(resolve, getDelay());
-        } else if (step.type === 'fill') {
-          const key = step.row + ',' + step.col;
-          cellValues[key] = step.value;
-          cellStates[key] = 'filled';
-          draw();
-          setTimeout(resolve, getDelay() * 0.3);
-        } else if (step.type === 'optimal') {
-          step.cells.forEach(([r, c]) => {
-            cellStates[r + ',' + c] = 'optimal';
-          });
-          draw();
-          setTimeout(resolve, getDelay());
-        } else {
-          resolve();
-        }
-      });
-    }
-
-    function reset() {
-      running = false;
-      stepQueue = [];
-      cellStates = {};
-      cellValues = {};
-      generateItems();
-      updateBtn();
-      draw();
-    }
-
-    async function solve() {
-      if (running) {
-        running = false;
-        updateBtn();
-        return;
-      }
-
-      if (stepQueue.length === 0) {
-        cellStates = {};
-        cellValues = {};
-        stepQueue = generateSteps();
-      }
-
-      running = true;
-      updateBtn();
-
-      while (stepQueue.length > 0 && running) {
-        const step = stepQueue.shift();
-        await executeStep(step);
-      }
-
-      running = false;
-      updateBtn();
-      draw();
-    }
-
-    async function stepOne() {
-      if (running) return;
-      if (stepQueue.length === 0) {
-        cellStates = {};
-        cellValues = {};
-        stepQueue = generateSteps();
-      }
-      if (stepQueue.length > 0) {
-        const s = stepQueue.shift();
-        await executeStep(s);
-      }
-    }
-
-    function updateBtn() {
-      document.getElementById('btnSolve').textContent = running ? '❚❚ Pause' : '▶ Solve';
-    }
-
-    document.getElementById('btnSolve').addEventListener('click', solve);
-    document.getElementById('btnStep').addEventListener('click', stepOne);
-    document.getElementById('btnReset').addEventListener('click', reset);
-    document.getElementById('speedSlider').addEventListener('input', e => {
-      speed = parseInt(e.target.value);
-    });
-    window.addEventListener('resize', () => { resize(); draw(); });
-
-    resize();
-    reset();
-  })();
-  </script>
-  <script src="../../js/lofi-music.js"></script>
-  <script>
-    document.getElementById('musicToggle').addEventListener('click', function () {
-      var on = LofiMusic.toggle();
-      this.classList.toggle('is-playing', on);
-      this.title = on ? 'Stop lofi music' : 'Play lofi music';
-    });
-  </script>
+  <script src="../../js/animation-engine.js"></script>
+  <script src="knapsack.js"></script>
+  <script src="../../js/lofi-music.js" defer></script>
 </body>
 </html>

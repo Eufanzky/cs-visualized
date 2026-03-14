@@ -1,0 +1,75 @@
+{
+  "id": "fibonacci",
+  "categoryId": "dynamic-programming",
+  "title": "Fibonacci with Memoization",
+  "pageTitle": "Fibonacci with Memoization — CS Animations",
+  "subtitle": "Visualize the recursion tree for Fibonacci and see how memoization eliminates redundant computation.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine"
+    ],
+    "animation": "fibonacci.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnCompute",
+      "label": "&#9654; Compute",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnStep",
+      "label": "Step"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "nSlider",
+      "label": "N",
+      "min": 3,
+      "max": 15,
+      "value": 8
+    }
+  ],
+  "complexity": [
+    "Time: <code>O(n)</code> with memoization",
+    "Time: <code>O(2<sup>n</sup>)</code> naive recursive",
+    "Space: <code>O(n)</code> memo table + call stack"
+  ],
+  "complexityNote": "Memoization converts exponential to linear by caching subproblem results.",
+  "steps": [
+    "Call fib(n) recursively: fib(n) = fib(n-1) + fib(n-2)",
+    "Before computing, check memo table for cached result",
+    "If cached, return immediately (cache hit)",
+    "If not, compute and store result in memo table",
+    "Memoization prunes the recursion tree dramatically"
+  ]
+}

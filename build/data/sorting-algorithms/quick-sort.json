@@ -1,0 +1,76 @@
+{
+  "id": "quick-sort",
+  "categoryId": "sorting-algorithms",
+  "title": "Quick Sort",
+  "pageTitle": "Quick Sort — CS Animations",
+  "subtitle": "Choose a pivot element, partition the array so smaller elements go left and larger go right, then recursively sort the partitions.",
+  "scripts": {
+    "shared": [
+      "colors",
+      "canvas-utils",
+      "sounds",
+      "animation-engine",
+      "bar-renderer"
+    ],
+    "animation": "quick-sort.js"
+  },
+  "controls": [
+    {
+      "type": "button",
+      "id": "btnPlay",
+      "label": "▶ Play",
+      "primary": true
+    },
+    {
+      "type": "button",
+      "id": "btnStep",
+      "label": "Step"
+    },
+    {
+      "type": "button",
+      "id": "btnReset",
+      "label": "Reset"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "sound-button"
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "speedSlider",
+      "label": "Speed",
+      "min": 1,
+      "max": 100,
+      "value": 50
+    },
+    {
+      "type": "separator"
+    },
+    {
+      "type": "slider",
+      "id": "sizeSlider",
+      "label": "Size",
+      "min": 8,
+      "max": 64,
+      "value": 24
+    }
+  ],
+  "complexity": [
+    "Time: <code>O(n log n)</code> average",
+    "Time: <code>O(n²)</code> worst (sorted input)",
+    "Space: <code>O(log n)</code> auxiliary (call stack)"
+  ],
+  "complexityNote": "Not stable — equal elements may change relative order.",
+  "steps": [
+    "Choose the last element as pivot",
+    "Partition: elements &lt; pivot go left",
+    "Elements &gt; pivot go right",
+    "Place pivot in its final position",
+    "Recursively sort left and right partitions"
+  ]
+}

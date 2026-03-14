@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600&family=Instrument+Serif&display=swap">
   <title>Data Structures — CS Animations</title>
   <link rel="stylesheet" href="../../css/styles.css">
 </head>
@@ -32,7 +35,9 @@
       <span>data-structures</span>
     </div>
     <h1 class="category-hero__title">Data Structures</h1>
-    <p class="category-hero__desc">Explore how data is organized, stored, and accessed in memory through fundamental structures.</p>
+    <p class="category-hero__desc">
+      Explore how data is organized, stored, and accessed in memory through fundamental structures.
+    </p>
   </section>
 
   <div class="animations-grid" id="animGrid" data-category="data-structures"></div>
@@ -43,13 +48,6 @@
 
   <script src="../../js/categories.js"></script>
   <script src="../../js/category-page.js"></script>
-  <script src="../../js/lofi-music.js"></script>
-  <script>
-    document.getElementById('musicToggle').addEventListener('click', function () {
-      var on = LofiMusic.toggle();
-      this.classList.toggle('is-playing', on);
-      this.title = on ? 'Stop lofi music' : 'Play lofi music';
-    });
-  </script>
+  <script src="../../js/lofi-music.js" defer></script>
 </body>
 </html>
