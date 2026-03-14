@@ -12,6 +12,7 @@ import {
 } from '../lib/animation-engine';
 import { getRenderer } from '../lib/renderers';
 import { drawBarChart } from '../lib/renderers/bar-chart';
+import { drawBoxSwap, getBoxSwapFrames, type BoxSwapAnimation } from '../lib/renderers/box-swap';
 import { isStepResult, type StepGenerator } from '../lib/algorithms';
 import { lofiSounds } from '../lib/lofi-sounds';
 
@@ -123,6 +124,7 @@ export function useAnimation(
         const delay = speedToDelay(speed);
         const s = stateRef.current;
         const isBarChart = rendererTypeRef.current === 'bar-chart';
+        const isBoxSwap = rendererTypeRef.current === 'box-swap';
 
         // Trigger sound effect for this step (skip if unmounted)
         if (playingRef.current || !s.isPlaying) {
@@ -176,6 +178,46 @@ export function useAnimation(
           }
 
           requestAnimationFrame(animateFrame);
+        } else if (step.type === 'swap' && isBoxSwap && step.indices.length === 2) {
+          // Box-swap arc animation — boxes physically exchange positions
+          const [a, b] = step.indices;
+          const progressFrames = getBoxSwapFrames(18);
+          let frameIdx = 0;
+
+          const preSwap: AnimationState = {
+            ...s,
+            comparingIndices: [],
+            swappingIndices: [a, b],
+          };
+          setState(preSwap);
+          stateRef.current = preSwap;
+
+          function animateBoxFrame() {
+            if (!playingRef.current && stateRef.current.isPlaying) {
+              // Unmounted — bail
+              return;
+            }
+            const result = getCtx();
+            if (!result) return;
+            const { ctx, w, h } = result;
+
+            const progress = progressFrames[frameIdx];
+            const swapAnim: BoxSwapAnimation = { a, b, progress };
+            drawBoxSwap(ctx, w, h, stateRef.current.scene ?? null, stateRef.current, swapAnim);
+
+            frameIdx++;
+            if (frameIdx < progressFrames.length) {
+              requestAnimationFrame(animateBoxFrame);
+            } else {
+              // Commit the swap to state
+              const next = applyStep(stateRef.current, step);
+              setState(next);
+              stateRef.current = next;
+              setTimeout(() => resolve(next), Math.round(delay * 0.3));
+            }
+          }
+
+          requestAnimationFrame(animateBoxFrame);
         } else if (step.type === 'sorted' || step.type === 'done') {
           const next = applyStep(s, step);
           setState(next);
