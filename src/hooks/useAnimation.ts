@@ -124,14 +124,16 @@ export function useAnimation(
         const s = stateRef.current;
         const isBarChart = rendererTypeRef.current === 'bar-chart';
 
-        // Trigger sound effect for this step
-        lofiSounds.step({
-          type: step.type,
-          value: step.indices.length > 0
-            ? s.array[step.indices[0]] / Math.max(...s.array)
-            : 0.5,
-          values: step.values?.map(v => v / Math.max(...s.array)),
-        });
+        // Trigger sound effect for this step (skip if unmounted)
+        if (playingRef.current || !s.isPlaying) {
+          lofiSounds.step({
+            type: step.type,
+            value: step.indices.length > 0
+              ? s.array[step.indices[0]] / Math.max(...s.array)
+              : 0.5,
+            values: step.values?.map(v => v / Math.max(...s.array)),
+          });
+        }
 
         if (step.type === 'compare') {
           const next = applyStep(s, step);
@@ -236,6 +238,9 @@ export function useAnimation(
         const step = s.steps[s.currentStep];
         await executeStep(step, s.speed);
 
+        // Check if we were stopped (unmount or pause) during the step
+        if (!playingRef.current) break;
+
         if (stateRef.current.isDone) {
           playingRef.current = false;
           setState(prev => ({ ...prev, isPlaying: false }));
@@ -291,6 +296,14 @@ export function useAnimation(
     },
     []
   );
+
+  // ── Stop animation on unmount ────────────────────────────────────────
+
+  useEffect(() => {
+    return () => {
+      playingRef.current = false;
+    };
+  }, []);
 
   // ── Speed / size ──────────────────────────────────────────────────────
 

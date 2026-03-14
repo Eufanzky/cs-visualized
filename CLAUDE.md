@@ -4,12 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Interactive CS algorithm visualizations. The project has two coexisting frontends:
-
-1. **Next.js app** (`src/`) — React + TypeScript + Tailwind CSS. This is the active development target.
-2. **Legacy vanilla JS** (`js/`, `animations/`, `build/`) — pure HTML5/CSS3/vanilla JS with a Node.js build script. Still functional but being superseded.
-
-Both share the same visual identity and algorithm coverage.
+Interactive CS algorithm visualizations built with Next.js, React, TypeScript, and Tailwind CSS. Canvas-based animations with step-through controls, lofi music, and sound effects. 31 animations across 6 categories with multiple visualization modes per algorithm.
 
 ## Commands
 
