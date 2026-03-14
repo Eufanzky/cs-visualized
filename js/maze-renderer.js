@@ -95,8 +95,9 @@ window.MazeRenderer = {
     var offsetX = (engine.w - gridW) / 2;
     var offsetY = padding + 20;
 
-    var wallColor = opts.wallColor || COLORS.wall || '#1a1218';
-    var closedColor = opts.closedColor || COLORS.closed || '#3a2e3a';
+    var wallColor = opts.wallColor || COLORS.wall;
+    var closedColor = opts.closedColor || COLORS.closed;
+    var emptyColor = opts.emptyColor || COLORS.mazeEmpty || COLORS.elevated;
 
     for (var r = 0; r < rows; r++) {
       for (var c = 0; c < cols; c++) {
@@ -104,8 +105,9 @@ window.MazeRenderer = {
         var y = offsetY + r * cellSize;
         var state = s.mazeCellStates[r][c];
 
-        var fillColor = COLORS.surface;
+        var fillColor = emptyColor;
         var glow = false;
+        var strokeColor = null;
 
         if (state === 'wall') {
           fillColor = wallColor;
@@ -116,7 +118,7 @@ window.MazeRenderer = {
         } else if (state === 'current') {
           fillColor = COLORS.accent; glow = true;
         } else if (state === 'open' || state === 'queued' || state === 'on-stack') {
-          fillColor = COLORS.primary;
+          fillColor = COLORS.primary; glow = true;
         } else if (state === 'closed' || state === 'visited') {
           fillColor = closedColor;
         } else if (state === 'path') {

@@ -479,7 +479,7 @@
         var y = offsetY + r * cellSize;
         var state = s.cellStates[r][c];
 
-        var fillColor = COLORS.surface;
+        var fillColor = COLORS.mazeEmpty || COLORS.elevated;
         var glow = false;
 
         if (state === 'wall') {
@@ -491,7 +491,7 @@
         } else if (state === 'current') {
           fillColor = COLORS.accent; glow = true;
         } else if (state === 'open') {
-          fillColor = COLORS.primary;
+          fillColor = COLORS.primary; glow = true;
         } else if (state === 'closed') {
           fillColor = COLORS.closed;
         } else if (state === 'path') {

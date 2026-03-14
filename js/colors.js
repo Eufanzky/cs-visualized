@@ -36,11 +36,12 @@ window.AppColors = (function () {
     sorted:    '#9cc49a',   // = success
 
     // ── Graph/maze semantic colors ──────────────────────────
-    node:      '#3d3632',   // default unvisited node (lighter than border)
-    edge:      '#564b44',   // default edge (visible against bg)
-    wall:      '#1a1218',   // maze wall cells (dark, distinct hue)
-    closed:    '#3a2e3a',   // visited/closed cells (muted purple tint)
-    dimmed:    '#2a2230',   // eliminated/searched (subtle purple tint)
+    node:      '#3d3632',   // default unvisited node
+    edge:      '#564b44',   // default edge
+    wall:      '#15120f',   // maze walls — solid dark, clearly blocked
+    closed:    '#4a3d4a',   // visited/closed — warm muted purple, clearly explored
+    dimmed:    '#38303a',   // eliminated — subtle purple tint
+    mazeEmpty: '#2d2824',   // passable maze cell — lighter than canvas bg
     pathGlow:  '#b8e6a8',   // bright path highlight
 
     // ── Overlay colors ──────────────────────────────────────
