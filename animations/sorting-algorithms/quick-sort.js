@@ -201,7 +201,8 @@
         var status = 'ready';
         if (engine.running) status = s.phaseLabel || 'sorting...';
         if (s.sortedIndices.size === engine.n) status = 'sorted \u2713';
-        R.drawStatus(engine, 'n=' + engine.n + '  |  ' + status);
+        var modeLabel = s.viewMode === 'boxes' ? '[boxes]' : '[bars]';
+        R.drawStatus(engine, modeLabel + '  n=' + engine.n + '  |  ' + status);
 
         // Info text — pivot-aware
         if (s.pivotIndex >= 0) {

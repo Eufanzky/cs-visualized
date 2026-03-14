@@ -199,7 +199,8 @@
         var status = 'ready';
         if (engine.running) status = s.phaseLabel || 'sorting...';
         if (s.sortedIndices.size === engine.n) status = 'sorted \u2713';
-        R.drawStatus(engine, 'n=' + engine.n + '  |  ' + status);
+        var modeLabel = s.viewMode === 'boxes' ? '[boxes]' : '[bars]';
+        R.drawStatus(engine, modeLabel + '  n=' + engine.n + '  |  ' + status);
 
         if (s.comparingIndices.length === 2) {
           R.drawInfo(engine, 'comparing left[' + s.comparingIndices[0] + '] & right[' + s.comparingIndices[1] + ']', COLORS.comparing);

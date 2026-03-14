@@ -257,7 +257,7 @@
     ctx.font = '11px JetBrains Mono, monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
-    ctx.fillText('nodes=' + NUM_NODES + '  |  ' + s.statusText, 20, 20);
+    ctx.fillText('[graph]  nodes=' + NUM_NODES + '  |  ' + s.statusText, 20, 20);
   }
 
   /* ─── Maze mode: steps ─── */
@@ -416,7 +416,7 @@
       rows: ROWS,
       startCell: startCell,
       goalCell: goalCell,
-      statusText: s.statusText
+      statusText: '[maze]  ' + s.statusText
     });
 
     // Stack display (right side)
@@ -470,31 +470,10 @@
   var speedSlider = document.getElementById('speedSlider');
   var sizeSlider = document.getElementById('sizeSlider');
 
-  if (btnPlay) {
-    btnPlay.addEventListener('click', function () {
-      eng.togglePlay();
-    });
-  }
-  if (btnStep) {
-    btnStep.addEventListener('click', function () {
-      eng.stepOnce();
-    });
-  }
-  if (btnReset) {
-    btnReset.addEventListener('click', function () {
-      eng.generateData(eng.n);
-    });
-  }
-  if (speedSlider) {
-    speedSlider.addEventListener('input', function () {
-      eng.setSpeed(Number(this.value));
-    });
-  }
-  if (sizeSlider) {
-    sizeSlider.addEventListener('input', function () {
-      eng.setSize(Number(this.value));
-    });
-  }
+  if (btnPlay) btnPlay.addEventListener('click', eng.play);
+  if (btnStep) btnStep.addEventListener('click', eng.step);
+  if (btnReset) btnReset.addEventListener('click', function () { eng.generateData(eng.n); });
+  if (speedSlider) speedSlider.addEventListener('input', function (e) { eng.speed = parseInt(e.target.value); });
 
   /* ─── View toggle ─── */
 

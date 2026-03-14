@@ -108,7 +108,8 @@
       var status = 'ready';
       if (engine.running) status = s.passNumber > 0 ? 'pass ' + s.passNumber : 'sorting...';
       if (s.sortedIndices.size === engine.n) status = 'sorted \u2713';
-      R.drawStatus(engine, 'n=' + engine.n + '  |  ' + status);
+      var modeLabel = s.viewMode === 'boxes' ? '[boxes]' : '[bars]';
+      R.drawStatus(engine, modeLabel + '  n=' + engine.n + '  |  ' + status);
 
       if (s.comparingIndices.length === 2) {
         R.drawInfo(engine, '[' + s.comparingIndices[0] + '] > [' + s.comparingIndices[1] + ']?', COLORS.comparing);

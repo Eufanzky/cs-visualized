@@ -250,7 +250,7 @@
     ctx.font = '11px JetBrains Mono, monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
-    ctx.fillText('nodes=' + NUM_NODES + '  |  ' + s.statusText, 20, 20);
+    ctx.fillText('[graph]  nodes=' + NUM_NODES + '  |  ' + s.statusText, 20, 20);
   }
 
   /* ── Queue display (shared) ── */
@@ -423,7 +423,7 @@
       rows: ROWS,
       startCell: startCell,
       goalCell: goalCell,
-      statusText: s.statusText
+      statusText: '[maze]  ' + s.statusText
     });
 
     // Queue display below the maze
@@ -438,35 +438,18 @@
   var speedSlider = document.getElementById('speedSlider');
   var btnSound = document.getElementById('btnSound');
 
-  if (btnPlay) {
-    btnPlay.addEventListener('click', function () {
-      eng.togglePlay();
-    });
-  }
+  if (btnPlay) btnPlay.addEventListener('click', eng.play);
+  if (btnStep) btnStep.addEventListener('click', eng.step);
+  if (btnReset) btnReset.addEventListener('click', function () { eng.generateData(eng.n); });
+  if (speedSlider) speedSlider.addEventListener('input', function (e) { eng.speed = parseInt(e.target.value); });
 
-  if (btnStep) {
-    btnStep.addEventListener('click', function () {
-      eng.stepOnce();
-    });
-  }
-
-  if (btnReset) {
-    btnReset.addEventListener('click', function () {
-      eng.generateData(eng.n);
-    });
-  }
-
-  if (speedSlider) {
-    speedSlider.addEventListener('input', function () {
-      eng.setSpeed(Number(speedSlider.value));
-    });
-  }
-
-  if (btnSound) {
-    btnSound.addEventListener('click', function () {
-      LofiSounds.toggle();
-    });
-  }
+  window.addEventListener('resize', function () {
+    eng.resize();
+    if (eng.state.viewMode !== 'maze' && eng.state.nodePositions) {
+      eng.state.nodePositions = initPositions(eng.w, eng.h);
+    }
+    eng.draw();
+  });
 
   /* ── View toggle ── */
 
@@ -480,12 +463,4 @@
     });
   }
 
-  /* ── Resize handler ── */
-
-  window.addEventListener('resize', function () {
-    var s = eng.state;
-    if (s.viewMode !== 'maze') {
-      s.nodePositions = initPositions(eng.w, eng.h);
-    }
-  });
 })();

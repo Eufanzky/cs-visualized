@@ -552,7 +552,7 @@
     ctx.font = '11px JetBrains Mono, monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
-    ctx.fillText('a* maze | ' + COLS + 'x' + ROWS + ' grid  |  ' + s.statusText, 20, 18);
+    ctx.fillText('[maze]  ' + COLS + 'x' + ROWS + ' grid  |  ' + s.statusText, 20, 18);
   }
 
   /* ────────── Graph draw ────────── */
@@ -666,7 +666,7 @@
     ctx.font = '11px JetBrains Mono, monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
-    ctx.fillText('a* graph | ' + NUM_NODES + ' nodes | ' + s.statusText, 20, 18);
+    ctx.fillText('[graph]  ' + NUM_NODES + ' nodes  |  ' + s.statusText, 20, 18);
   }
 
   /* ────────── Engine ────────── */
