@@ -71,7 +71,7 @@ export default async function CategoryPage({
       {/* ── Category Hero ─────────────────────────────────────────── */}
       <section
         style={{
-          padding: '120px 2rem 56px',
+          padding: 'clamp(80px, 12vw, 120px) clamp(1rem, 3vw, 2rem) 56px',
           maxWidth: 'var(--max-width)',
           margin: '0 auto',
           position: 'relative',
@@ -191,7 +191,7 @@ export default async function CategoryPage({
       {/* ── Animations Grid ───────────────────────────────────────── */}
       <section
         style={{
-          padding: '48px 2rem 120px',
+          padding: '48px clamp(1rem, 3vw, 2rem) clamp(64px, 10vw, 120px)',
           maxWidth: 'var(--max-width)',
           margin: '0 auto',
           position: 'relative',
@@ -216,7 +216,7 @@ export default async function CategoryPage({
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
                 gap: '1.25rem',
                 marginBottom: '3rem',
               }}
@@ -254,7 +254,7 @@ export default async function CategoryPage({
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
                 gap: '1.25rem',
               }}
             >

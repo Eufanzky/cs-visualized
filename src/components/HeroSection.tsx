@@ -158,7 +158,7 @@ export default function HeroSection() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          padding: '120px 2rem 80px',
+          padding: 'clamp(80px, 15vw, 120px) clamp(1rem, 3vw, 2rem) clamp(48px, 8vw, 80px)',
           maxWidth: 'var(--max-width)',
           margin: '0 auto',
           overflow: 'hidden',
@@ -292,7 +292,7 @@ export default function HeroSection() {
       <section
         id="categories"
         style={{
-          padding: '80px 2rem 120px',
+          padding: 'clamp(48px, 8vw, 80px) clamp(1rem, 3vw, 2rem) clamp(64px, 10vw, 120px)',
           maxWidth: 'var(--max-width)',
           margin: '0 auto',
           position: 'relative',
@@ -340,7 +340,7 @@ export default function HeroSection() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(340px, 100%), 1fr))',
             gap: '1.5rem',
           }}
         >

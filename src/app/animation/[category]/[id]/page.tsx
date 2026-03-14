@@ -79,7 +79,7 @@ export default async function AnimationPage({
   return (
     <div
       style={{
-        padding: '80px 2rem 4rem',
+        padding: 'clamp(72px, 10vw, 80px) clamp(1rem, 3vw, 2rem) 4rem',
         maxWidth: 'var(--max-width)',
         margin: '0 auto',
         position: 'relative',
@@ -93,7 +93,7 @@ export default async function AnimationPage({
       />
 
       {/* ── Header ──────────────────────────────────────────────── */}
-      <header style={{ marginBottom: '2.5rem', position: 'relative', zIndex: 1 }}>
+      <header style={{ marginBottom: '2rem', position: 'relative', zIndex: 1 }}>
         {/* Animated breadcrumb */}
         <AnimatedBreadcrumb
           segments={[
@@ -177,8 +177,8 @@ export default async function AnimationPage({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '1.5rem',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
+          gap: '1.25rem',
           marginTop: '2rem',
           position: 'relative',
           zIndex: 1,
@@ -326,12 +326,12 @@ export default async function AnimationPage({
           </div>
         </div>
 
-        {/* Key insight — spans full width if only one row left */}
+        {/* Key insight — spans full width on wide screens */}
         <div
           className="float-card"
           style={{
             padding: '1.75rem',
-            gridColumn: 'span 2',
+            gridColumn: '1 / -1',
             position: 'relative',
             overflow: 'hidden',
           }}

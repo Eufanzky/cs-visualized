@@ -36,7 +36,7 @@ export default function AnimCardClient({
         background: 'var(--bg-surface)',
         border: '1px solid var(--border-subtle)',
         borderRadius: 'var(--radius-md)',
-        padding: '1.5rem',
+        padding: '1.5rem 1.75rem',
         textDecoration: 'none',
         transition:
           'border-color 0.3s, background 0.3s, transform 0.3s, box-shadow 0.3s',

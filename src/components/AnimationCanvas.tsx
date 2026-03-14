@@ -137,7 +137,7 @@ export function AnimationCanvas({
 
       {/* Status bar below the canvas */}
       <div
-        className="flex items-center justify-between border-t border-white/[0.06] bg-[#0b0b12] px-4 py-1.5"
+        className="flex items-center justify-between border-t border-white/[0.06] bg-[#0b0b12] px-4 sm:px-5 py-2"
       >
         {/* Left: algorithm name */}
         {algorithmName && (

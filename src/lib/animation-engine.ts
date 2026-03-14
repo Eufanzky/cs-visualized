@@ -7,7 +7,9 @@ export type RendererType =
   | 'linear'
   | 'hash-table'
   | 'dp-grid'
-  | 'neuron';
+  | 'neuron'
+  | 'maze'
+  | 'recursion-tree';
 
 // ── Scene state interfaces ────────────────────────────────────────────────
 
@@ -118,6 +120,37 @@ export interface NeuronScene {
   trainingPoints?: TrainingPoint[];
 }
 
+export interface MazeScene {
+  type: 'maze';
+  grid: number[][]; // 0 = passable, 1 = wall
+  cellStates: Record<string, string>; // "row,col" → state string
+  rows: number;
+  cols: number;
+  start: { r: number; c: number };
+  goal: { r: number; c: number };
+  /** Current frontier contents for display */
+  frontier?: string[];
+}
+
+export interface RecursionTreeNode {
+  id: number;
+  label: string;
+  x: number;
+  y: number;
+  parentId?: number;
+  /** 'default' | 'computing' | 'computed' | 'cached' | 'current' */
+  state: string;
+  result?: string;
+}
+
+export interface RecursionTreeScene {
+  type: 'recursion-tree';
+  nodes: RecursionTreeNode[];
+  edges: Array<{ from: number; to: number }>;
+  /** Which fib(n) values have been cached/memoized */
+  memo: Record<number, number>;
+}
+
 // ── Discriminated union ───────────────────────────────────────────────────
 
 export type SceneState =
@@ -126,7 +159,9 @@ export type SceneState =
   | LinearScene
   | HashTableScene
   | DPGridScene
-  | NeuronScene;
+  | NeuronScene
+  | MazeScene
+  | RecursionTreeScene;
 
 // ── Step result (scene-aware generators) ─────────────────────────────────
 

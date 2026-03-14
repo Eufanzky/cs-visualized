@@ -19,6 +19,9 @@ import { generateBinaryTreeSteps } from './binary-tree';
 import { generateHashTableSteps } from './hash-table';
 import { generateKnapsackSteps } from './knapsack';
 import { generateLCSSteps } from './lcs';
+import { generateBFSMazeSteps } from './bfs-maze';
+import { generateDFSMazeSteps } from './dfs-maze';
+import { generateFibonacciTreeSteps } from './fibonacci-tree';
 
 // ── Algorithm registry ────────────────────────────────────────────────────
 
@@ -275,6 +278,45 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     stable: true,
     generateSteps: generateLCSSteps,
     rendererType: 'dp-grid',
+  },
+  'bfs-maze': {
+    id: 'bfs-maze',
+    name: 'BFS Maze Solver',
+    category: 'search-algorithms',
+    description:
+      'Watch BFS explore a maze level by level, guaranteeing the shortest path from start to goal by expanding all cells at the current distance before moving deeper.',
+    timeComplexityWorst: 'O(V+E)',
+    timeComplexityBest: 'O(1)',
+    spaceComplexity: 'O(V)',
+    stable: true,
+    generateSteps: generateBFSMazeSteps,
+    rendererType: 'maze',
+  },
+  'fibonacci-tree': {
+    id: 'fibonacci-tree',
+    name: 'Fibonacci Recursion Tree',
+    category: 'dynamic-programming',
+    description:
+      'Visualize the recursion tree for Fibonacci with memoization, showing how cached subproblems eliminate redundant computation.',
+    timeComplexityWorst: 'O(n)',
+    timeComplexityBest: 'O(n)',
+    spaceComplexity: 'O(n)',
+    stable: true,
+    generateSteps: generateFibonacciTreeSteps,
+    rendererType: 'recursion-tree',
+  },
+  'dfs-maze': {
+    id: 'dfs-maze',
+    name: 'DFS Maze Solver',
+    category: 'search-algorithms',
+    description:
+      'Watch DFS dive deep into a maze using a stack, exploring one path fully before backtracking — finding a path quickly but not necessarily the shortest one.',
+    timeComplexityWorst: 'O(V+E)',
+    timeComplexityBest: 'O(1)',
+    spaceComplexity: 'O(V)',
+    stable: true,
+    generateSteps: generateDFSMazeSteps,
+    rendererType: 'maze',
   },
 };
 

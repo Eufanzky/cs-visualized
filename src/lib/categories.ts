@@ -84,6 +84,8 @@ export const CATEGORIES: Category[] = [
       { id: 'binary-search', title: 'Binary Search',       complexity: 'O(log n)', status: 'ready' },
       { id: 'bfs',           title: 'Breadth-First Search', complexity: 'O(V+E)',   status: 'ready' },
       { id: 'dfs',           title: 'Depth-First Search',   complexity: 'O(V+E)',   status: 'ready' },
+      { id: 'bfs-maze',      title: 'BFS Maze Solver',      complexity: 'O(V+E)',   status: 'ready' },
+      { id: 'dfs-maze',      title: 'DFS Maze Solver',      complexity: 'O(V+E)',   status: 'ready' },
       { id: 'a-star',        title: 'A* Search',            complexity: 'O(E)',     status: 'coming' },
     ],
   },
@@ -117,7 +119,8 @@ export const CATEGORIES: Category[] = [
     animations: [
       { id: 'fibonacci', title: 'Fibonacci',             complexity: 'O(n)',   status: 'ready' },
       { id: 'knapsack',  title: '0/1 Knapsack',          complexity: 'O(nW)',  status: 'ready' },
-      { id: 'lcs',       title: 'Longest Common Subseq', complexity: 'O(mn)', status: 'ready' },
+      { id: 'lcs',            title: 'Longest Common Subseq',   complexity: 'O(mn)', status: 'ready' },
+      { id: 'fibonacci-tree', title: 'Fibonacci Recursion Tree', complexity: 'O(n)',  status: 'ready' },
     ],
   },
   {

@@ -6,6 +6,8 @@ import { drawLinear } from './linear';
 import { drawHashTable } from './hash-table';
 import { drawDPGrid } from './dp-grid';
 import { drawNeuron } from './neuron';
+import { drawMaze } from './maze';
+import { drawRecursionTree } from './recursion-tree';
 
 // ── Renderer function signature ────────────────────────────────────────────
 
@@ -42,6 +44,8 @@ const RENDERER_REGISTRY: Record<RendererType, CanvasRenderer> = {
   'hash-table': drawHashTable,
   'dp-grid':    drawDPGrid,
   'neuron':     drawNeuron,
+  'maze':           drawMaze,
+  'recursion-tree': drawRecursionTree,
 };
 
 /**
@@ -60,4 +64,6 @@ export {
   drawHashTable,
   drawDPGrid,
   drawNeuron,
+  drawMaze,
+  drawRecursionTree,
 };

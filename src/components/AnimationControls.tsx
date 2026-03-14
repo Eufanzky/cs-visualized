@@ -39,7 +39,7 @@ function PauseIcon() {
 
 function StepIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
       <path d="M3 2.5a.5.5 0 0 1 .765-.424l7 3.85V2.5a.5.5 0 0 1 1 0v11a.5.5 0 0 1-1 0v-3.426l-7 3.85A.5.5 0 0 1 3 13.5v-11Z" />
     </svg>
   );
@@ -47,7 +47,7 @@ function StepIcon() {
 
 function ResetIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M2.5 8a5.5 5.5 0 1 1 1.1 3.3" />
       <polyline points="2.5 13 2.5 9 6.5 9" />
     </svg>
@@ -192,7 +192,7 @@ function IconButton({
       title={title}
       aria-label={title}
       className={[
-        'inline-flex items-center justify-center w-8 h-8 rounded-lg',
+        'inline-flex items-center justify-center w-10 h-10 rounded-lg',
         'text-sm font-medium font-mono text-[#908caa]',
         'bg-white/5 border border-white/8',
         'transition-all duration-200 ease-out',
@@ -236,11 +236,11 @@ function Slider({
     <div className="flex items-center gap-2.5">
       <label
         htmlFor={id}
-        className="text-[10px] font-mono text-[#6e6a86] min-w-[38px] uppercase tracking-widest"
+        className="text-[11px] font-mono text-[#6e6a86] min-w-[38px] uppercase tracking-widest"
       >
         {label}
       </label>
-      <div className="relative flex items-center" style={{ width: 100 }}>
+      <div className="relative flex items-center" style={{ width: 120 }}>
         {/* Custom track fill */}
         <div
           className="absolute inset-y-0 left-0 rounded-full pointer-events-none"
@@ -280,7 +280,7 @@ function Slider({
 }
 
 function ZoneSeparator() {
-  return <div className="h-7 w-px bg-white/10 mx-1.5" aria-hidden />;
+  return <div className="h-8 w-px bg-white/10 mx-1 hidden sm:block" aria-hidden />;
 }
 
 function StatPill({
@@ -297,7 +297,7 @@ function StatPill({
 }) {
   return (
     <div
-      className="flex items-center gap-1.5 rounded bg-white/[0.03] border border-white/[0.06] px-2.5 py-1 overflow-hidden stat-pill-bg"
+      className="flex items-center gap-1.5 rounded-md bg-white/[0.03] border border-white/[0.06] px-3 py-1.5 overflow-hidden stat-pill-bg"
       title={fullLabel ? `${fullLabel}: ${value}` : undefined}
     >
       <span
@@ -343,6 +343,8 @@ const RENDERER_STAT_LABELS: Record<string, { primary: string; primaryFull: strin
   'hash-table': { primary: 'ins',   primaryFull: 'insertions',   secondary: 'coll',  secondaryFull: 'collisions' },
   'dp-grid':    { primary: 'cells', primaryFull: 'cells computed', secondary: 'hits',  secondaryFull: 'cache hits' },
   'neuron':     { primary: 'epoch', primaryFull: 'examples seen', secondary: 'err',   secondaryFull: 'mispredictions' },
+  'maze':           { primary: 'cells', primaryFull: 'cells explored', secondary: 'path',  secondaryFull: 'path length' },
+  'recursion-tree': { primary: 'calls', primaryFull: 'recursive calls', secondary: 'hits', secondaryFull: 'cache hits' },
 };
 
 export function AnimationControls({
@@ -439,11 +441,11 @@ export function AnimationControls({
       </div>
 
       {/* Main controls row */}
-      <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
+      <div className="flex flex-wrap items-center gap-3 px-4 sm:px-5 py-3">
         {/* CONTROLS label */}
         <span
           aria-hidden="true"
-          className="text-[9px] font-mono uppercase tracking-[0.2em] text-[#4a4860] mr-1 select-none"
+          className="text-[9px] font-mono uppercase tracking-[0.2em] text-[#4a4860] mr-0.5 select-none hidden sm:inline"
         >
           controls
         </span>
@@ -451,7 +453,7 @@ export function AnimationControls({
         <ZoneSeparator />
 
         {/* Zone 1: Playback */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <PlayPauseButton
             isPlaying={isPlaying}
             disabled={isDone && !isPlaying}
@@ -473,7 +475,7 @@ export function AnimationControls({
         <ZoneSeparator />
 
         {/* Zone 2: Parameters */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <Slider
             label="Speed"
             ariaLabel="Animation speed"
@@ -503,7 +505,7 @@ export function AnimationControls({
         <ZoneSeparator />
 
         {/* Zone 3: Metrics */}
-        <div className="flex items-center gap-1.5" aria-label="Animation statistics">
+        <div className="flex items-center gap-2" aria-label="Animation statistics">
           <StatPill label="step" fullLabel="step" value={stepDisplay} color="text-[#908caa]" />
           <StatPill label={statLabels.primary} fullLabel={statLabels.primaryFull} value={comparisons} color="text-[#c4a7e7]" />
           <StatPill label={statLabels.secondary} fullLabel={statLabels.secondaryFull} value={swaps} color="text-[#f6c177]" />
