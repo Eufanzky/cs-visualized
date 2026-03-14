@@ -10,7 +10,8 @@
       "canvas-utils",
       "sounds",
       "animation-engine",
-      "bar-renderer"
+      "bar-renderer",
+      "box-renderer"
     ],
     "animation": "heap-sort.js"
   },
@@ -30,6 +31,14 @@
       "type": "button",
       "id": "btnReset",
       "label": "Reset"
+    },
+    {
+      "type": "view-toggle",
+      "id": "btnView",
+      "label": "&#9637; Boxes"
+    },
+    {
+      "type": "separator"
     },
     {
       "type": "separator"

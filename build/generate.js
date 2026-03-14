@@ -55,6 +55,8 @@ function renderControl(ctrl) {
              '" min="' + ctrl.min + '" max="' + ctrl.max + '" value="' + ctrl.value + '">';
     case 'sound-button':
       return '      <button class="controls__btn controls__btn--sound" id="btnSound" title="Toggle sound">&#9834;</button>';
+    case 'view-toggle':
+      return '      <button class="controls__btn" id="' + (ctrl.id || 'btnView') + '">' + (ctrl.label || '&#9637; Boxes') + '</button>';
     default:
       return '';
   }
