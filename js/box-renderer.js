@@ -76,10 +76,10 @@ window.BoxRenderer = {
       }
 
       // Colors
-      var color = '#4a403a';
-      var borderColor = '#5a4e46';
+      var color = AppColors.node || '#3d3632';
+      var borderColor = AppColors.edge || '#564b44';
       var glow = false;
-      var textColor = '#ede6db';
+      var textColor = AppColors.text || '#ede6db';
 
       if (colorFn) {
         var result = colorFn(i);

@@ -1,9 +1,5 @@
 (function () {
   var COLORS = AppColors;
-  COLORS.wall = '#1a1726';
-  COLORS.closed = '#2a2540';
-  COLORS.node = '#4a403a';
-  COLORS.edge = '#4a403a';
 
   /* ────────── Maze constants ────────── */
   var COLS = 20;

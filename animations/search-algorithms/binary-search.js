@@ -1,6 +1,6 @@
   (function () {
     var COLORS = AppColors;
-    COLORS.dimmed = '#2a2540';
+    COLORS.dimmed = AppColors.dimmed;
 
     var Y_OFFSET = 30;
 

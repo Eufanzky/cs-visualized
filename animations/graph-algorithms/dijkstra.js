@@ -1,7 +1,7 @@
   (function () {
     var NUM_NODES = 8;
 
-    var COLORS = Object.assign({}, AppColors, { node: '#4a403a', edge: '#4a403a' });
+    var COLORS = AppColors;
 
     function addEdge(s, a, b, w) {
       s.edges.push({ from: a, to: b, weight: w });

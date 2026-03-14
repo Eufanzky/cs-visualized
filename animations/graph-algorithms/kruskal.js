@@ -6,7 +6,7 @@
       '#d48a8a', '#5da3c4', '#d4968e', '#b8a99a'
     ];
 
-    var COLORS = Object.assign({}, AppColors, { node: '#4a403a', edge: '#4a403a' });
+    var COLORS = AppColors;
 
     function getEdgeState(s, from, to) {
       return s.edgeStates[from + '-' + to] || s.edgeStates[to + '-' + from] || 'default';

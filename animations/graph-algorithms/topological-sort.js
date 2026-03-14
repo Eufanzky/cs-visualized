@@ -1,7 +1,7 @@
   (function () {
     var NUM_NODES = 8;
 
-    var COLORS = Object.assign({}, AppColors, { node: '#4a403a', edge: '#4a403a' });
+    var COLORS = AppColors;
 
     function drawArrowhead(ctx, fromX, fromY, toX, toY, radius, color) {
       var angle = Math.atan2(toY - fromY, toX - fromX);

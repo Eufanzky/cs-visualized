@@ -95,8 +95,8 @@ window.MazeRenderer = {
     var offsetX = (engine.w - gridW) / 2;
     var offsetY = padding + 20;
 
-    var wallColor = opts.wallColor || '#1a1726';
-    var closedColor = opts.closedColor || '#2a2540';
+    var wallColor = opts.wallColor || COLORS.wall || '#1a1218';
+    var closedColor = opts.closedColor || COLORS.closed || '#3a2e3a';
 
     for (var r = 0; r < rows; r++) {
       for (var c = 0; c < cols; c++) {

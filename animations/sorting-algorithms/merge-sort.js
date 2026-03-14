@@ -3,7 +3,7 @@
     // Algorithm-specific colors not in AppColors
     COLORS.mergeLeft = AppColors.highlight;
     COLORS.mergeRight = AppColors.type;
-    COLORS.mergeRegion = 'rgba(200,164,212,0.08)';
+    COLORS.mergeRegion = AppColors.mergeRegion;
 
     var eng = AnimationEngine({
       autoWireControls: false,

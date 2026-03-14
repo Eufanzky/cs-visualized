@@ -3,7 +3,7 @@
     // Algorithm-specific colors not in AppColors
     COLORS.pivot = AppColors.type;
     COLORS.wall = AppColors.highlight;
-    COLORS.lessThan = 'rgba(143,191,176,0.15)';
+    COLORS.lessThan = AppColors.partitionZone;
 
     var eng = AnimationEngine({
       autoWireControls: false,
