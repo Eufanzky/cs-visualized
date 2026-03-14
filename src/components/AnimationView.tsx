@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useAnimation } from '@/hooks/useAnimation';
 import { AnimationCanvas } from '@/components/AnimationCanvas';
 import { AnimationControls } from '@/components/AnimationControls';
@@ -22,12 +23,63 @@ const STATUS_DOT_COLOR: Record<string, string> = {
  * Client boundary component that owns the animation lifecycle.
  * Wraps the canvas + controls in a cohesive "tool window" container
  * with a terminal-style top bar showing the algorithm name and status dot.
+ *
+ * Supports visualization mode switching — when the algorithm defines
+ * multiple `modes`, the user can toggle between them and the animation
+ * resets with the new renderer type and (optionally) a different step generator.
  */
 export function AnimationView({ algorithmId, initialSize = 24 }: AnimationViewProps) {
   const algo = getAlgorithm(algorithmId);
-  const rendererType = algo?.rendererType ?? 'bar-chart';
+  const modes = algo?.modes;
   const algorithmName = algo?.name ?? algorithmId;
 
+  const [modeIndex, setModeIndex] = useState(0);
+
+  const activeMode = modes?.[modeIndex];
+  const activeRendererType = activeMode?.rendererType ?? algo?.rendererType ?? 'bar-chart';
+  const activeGenerateSteps = activeMode?.generateSteps ?? algo?.generateSteps ?? (() => []);
+
+  return (
+    <AnimationViewInner
+      key={`${algorithmId}-mode-${modeIndex}`}
+      algorithmId={algorithmId}
+      algorithmName={algorithmName}
+      initialSize={initialSize}
+      rendererType={activeRendererType}
+      generateSteps={activeGenerateSteps}
+      modes={modes}
+      modeIndex={modeIndex}
+      onModeChange={setModeIndex}
+    />
+  );
+}
+
+// ── Inner component — remounts on mode change via key ──────────────────
+
+import type { RendererType } from '@/lib/animation-engine';
+import type { StepGenerator, VisualizationMode } from '@/lib/algorithms';
+
+interface AnimationViewInnerProps {
+  algorithmId: string;
+  algorithmName: string;
+  initialSize: number;
+  rendererType: RendererType;
+  generateSteps: StepGenerator;
+  modes?: VisualizationMode[];
+  modeIndex: number;
+  onModeChange: (index: number) => void;
+}
+
+function AnimationViewInner({
+  algorithmId,
+  algorithmName,
+  initialSize,
+  rendererType,
+  generateSteps,
+  modes,
+  modeIndex,
+  onModeChange,
+}: AnimationViewInnerProps) {
   const {
     state,
     canvasRef,
@@ -39,7 +91,7 @@ export function AnimationView({ algorithmId, initialSize = 24 }: AnimationViewPr
     setSize,
   } = useAnimation(
     algorithmId,
-    algo?.generateSteps ?? (() => []),
+    generateSteps,
     initialSize,
     rendererType
   );
@@ -86,6 +138,9 @@ export function AnimationView({ algorithmId, initialSize = 24 }: AnimationViewPr
           minSize={5}
           maxSize={100}
           rendererType={rendererType}
+          modes={modes}
+          currentMode={modeIndex}
+          onModeChange={onModeChange}
         />
       </div>
     </section>

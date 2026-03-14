@@ -8,6 +8,8 @@ import { drawDPGrid } from './dp-grid';
 import { drawNeuron } from './neuron';
 import { drawMaze } from './maze';
 import { drawRecursionTree } from './recursion-tree';
+import { drawColorSpectrum } from './color-spectrum';
+import { drawBoxSwap } from './box-swap';
 
 // ── Renderer function signature ────────────────────────────────────────────
 
@@ -46,6 +48,8 @@ const RENDERER_REGISTRY: Record<RendererType, CanvasRenderer> = {
   'neuron':     drawNeuron,
   'maze':           drawMaze,
   'recursion-tree': drawRecursionTree,
+  'color-spectrum': drawColorSpectrum,
+  'box-swap':       drawBoxSwap,
 };
 
 /**
@@ -66,4 +70,6 @@ export {
   drawNeuron,
   drawMaze,
   drawRecursionTree,
+  drawColorSpectrum,
+  drawBoxSwap,
 };

@@ -37,6 +37,13 @@ import { generateGraphDSSteps } from './graph-ds';
 
 export type StepGenerator = (arr: number[]) => AnimationStep[] | StepResult;
 
+export interface VisualizationMode {
+  id: string;
+  label: string;
+  rendererType: RendererType;
+  generateSteps?: StepGenerator;
+}
+
 export interface AlgorithmMeta {
   id: string;
   name: string;
@@ -52,6 +59,8 @@ export interface AlgorithmMeta {
   generateSteps: StepGenerator;
   /** Which visual renderer to use for this algorithm */
   rendererType: RendererType;
+  /** Additional visualization modes beyond the default */
+  modes?: VisualizationMode[];
 }
 
 export const ALGORITHMS: Record<string, AlgorithmMeta> = {
@@ -67,6 +76,11 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     stable: true,
     generateSteps: generateBubbleSortSteps,
     rendererType: 'bar-chart',
+    modes: [
+      { id: 'bars', label: 'bars', rendererType: 'bar-chart' },
+      { id: 'spectrum', label: 'spectrum', rendererType: 'color-spectrum' },
+      { id: 'boxes', label: 'boxes', rendererType: 'box-swap' },
+    ],
   },
   'insertion-sort': {
     id: 'insertion-sort',
@@ -80,6 +94,11 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     stable: true,
     generateSteps: generateInsertionSortSteps,
     rendererType: 'bar-chart',
+    modes: [
+      { id: 'bars', label: 'bars', rendererType: 'bar-chart' },
+      { id: 'spectrum', label: 'spectrum', rendererType: 'color-spectrum' },
+      { id: 'boxes', label: 'boxes', rendererType: 'box-swap' },
+    ],
   },
   'merge-sort': {
     id: 'merge-sort',
@@ -93,6 +112,11 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     stable: true,
     generateSteps: generateMergeSortSteps,
     rendererType: 'bar-chart',
+    modes: [
+      { id: 'bars', label: 'bars', rendererType: 'bar-chart' },
+      { id: 'spectrum', label: 'spectrum', rendererType: 'color-spectrum' },
+      { id: 'boxes', label: 'boxes', rendererType: 'box-swap' },
+    ],
   },
   'quick-sort': {
     id: 'quick-sort',
@@ -106,6 +130,11 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     stable: false,
     generateSteps: generateQuickSortSteps,
     rendererType: 'bar-chart',
+    modes: [
+      { id: 'bars', label: 'bars', rendererType: 'bar-chart' },
+      { id: 'spectrum', label: 'spectrum', rendererType: 'color-spectrum' },
+      { id: 'boxes', label: 'boxes', rendererType: 'box-swap' },
+    ],
   },
   'binary-search': {
     id: 'binary-search',
@@ -119,6 +148,9 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     stable: true,
     generateSteps: generateBinarySearchSteps,
     rendererType: 'bar-chart',
+    modes: [
+      { id: 'bars', label: 'bars', rendererType: 'bar-chart' },
+    ],
   },
   'stack': {
     id: 'stack',
@@ -184,6 +216,10 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     stable: true,
     generateSteps: generateFibonacciSteps,
     rendererType: 'dp-grid',
+    modes: [
+      { id: 'grid', label: 'grid', rendererType: 'dp-grid' },
+      { id: 'tree', label: 'tree', rendererType: 'recursion-tree', generateSteps: generateFibonacciTreeSteps },
+    ],
   },
   'bfs': {
     id: 'bfs',
@@ -197,6 +233,10 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     stable: true,
     generateSteps: generateBFSSteps,
     rendererType: 'graph',
+    modes: [
+      { id: 'graph', label: 'graph', rendererType: 'graph' },
+      { id: 'maze', label: 'maze', rendererType: 'maze', generateSteps: generateBFSMazeSteps },
+    ],
   },
   'dfs': {
     id: 'dfs',
@@ -210,6 +250,10 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     stable: true,
     generateSteps: generateDFSSteps,
     rendererType: 'graph',
+    modes: [
+      { id: 'graph', label: 'graph', rendererType: 'graph' },
+      { id: 'maze', label: 'maze', rendererType: 'maze', generateSteps: generateDFSMazeSteps },
+    ],
   },
   'perceptron': {
     id: 'perceptron',
@@ -236,6 +280,11 @@ export const ALGORITHMS: Record<string, AlgorithmMeta> = {
     stable: false,
     generateSteps: generateHeapSortSteps,
     rendererType: 'bar-chart',
+    modes: [
+      { id: 'bars', label: 'bars', rendererType: 'bar-chart' },
+      { id: 'spectrum', label: 'spectrum', rendererType: 'color-spectrum' },
+      { id: 'boxes', label: 'boxes', rendererType: 'box-swap' },
+    ],
   },
   'binary-tree': {
     id: 'binary-tree',

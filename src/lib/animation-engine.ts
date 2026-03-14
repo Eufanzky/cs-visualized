@@ -9,7 +9,9 @@ export type RendererType =
   | 'dp-grid'
   | 'neuron'
   | 'maze'
-  | 'recursion-tree';
+  | 'recursion-tree'
+  | 'color-spectrum'
+  | 'box-swap';
 
 // ── Scene state interfaces ────────────────────────────────────────────────
 
@@ -352,7 +354,7 @@ export function applyStep(
       // Swap array values for bar-chart renderer (or when rendererType is not set —
       // e.g. legacy tests that construct AnimationState without the new fields).
       const rt = state.rendererType;
-      if ((rt === 'bar-chart' || rt === undefined) && step.indices.length === 2) {
+      if ((rt === 'bar-chart' || rt === 'color-spectrum' || rt === 'box-swap' || rt === undefined) && step.indices.length === 2) {
         const arr = [...state.array];
         const [a, b] = step.indices;
         [arr[a], arr[b]] = [arr[b], arr[a]];

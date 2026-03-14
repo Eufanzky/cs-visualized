@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimationState, type RendererType } from '../lib/animation-engine';
+import type { VisualizationMode } from '@/lib/algorithms';
 
 interface AnimationControlsProps {
   state: AnimationState;
@@ -16,6 +17,12 @@ interface AnimationControlsProps {
   maxSize?: number;
   /** Controls Size slider visibility and stat label wording */
   rendererType?: RendererType;
+  /** Available visualization modes for this algorithm */
+  modes?: VisualizationMode[];
+  /** Currently active mode index */
+  currentMode?: number;
+  /** Callback when the user selects a different mode */
+  onModeChange?: (index: number) => void;
 }
 
 // ── SVG Icons ──────────────────────────────────────────────────────────────
@@ -345,6 +352,8 @@ const RENDERER_STAT_LABELS: Record<string, { primary: string; primaryFull: strin
   'neuron':     { primary: 'epoch', primaryFull: 'examples seen', secondary: 'err',   secondaryFull: 'mispredictions' },
   'maze':           { primary: 'cells', primaryFull: 'cells explored', secondary: 'path',  secondaryFull: 'path length' },
   'recursion-tree': { primary: 'calls', primaryFull: 'recursive calls', secondary: 'hits', secondaryFull: 'cache hits' },
+  'color-spectrum': { primary: 'cmp',   primaryFull: 'comparisons', secondary: 'swp',  secondaryFull: 'swaps' },
+  'box-swap':       { primary: 'cmp',   primaryFull: 'comparisons', secondary: 'swp',  secondaryFull: 'swaps' },
 };
 
 export function AnimationControls({
@@ -358,11 +367,14 @@ export function AnimationControls({
   minSize = 5,
   maxSize = 100,
   rendererType = 'bar-chart',
+  modes,
+  currentMode = 0,
+  onModeChange,
 }: AnimationControlsProps) {
   const { isPlaying, isDone, speed, array, comparisons, swaps, currentStep, steps } =
     state;
 
-  const isBarChart = rendererType === 'bar-chart';
+  const isBarChart = rendererType === 'bar-chart' || rendererType === 'color-spectrum' || rendererType === 'box-swap';
   const arraySize = array.length;
 
   const sliderSpeedValue = Math.round(speed * 4);
@@ -449,6 +461,31 @@ export function AnimationControls({
         >
           controls
         </span>
+
+        {/* Mode switcher — shown when multiple visualization modes exist */}
+        {modes && modes.length > 1 && (
+          <>
+            <ZoneSeparator />
+            <div className="flex items-center gap-1" role="radiogroup" aria-label="Visualization mode">
+              {modes.map((mode, i) => (
+                <button
+                  key={mode.id}
+                  onClick={() => onModeChange?.(i)}
+                  role="radio"
+                  aria-checked={i === currentMode}
+                  aria-label={`${mode.label} visualization`}
+                  className={`px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest rounded-md transition-all ${
+                    i === currentMode
+                      ? 'bg-[#c4a7e7]/20 text-[#c4a7e7] border border-[#c4a7e7]/40'
+                      : 'bg-white/[0.03] text-[#6e6a86] border border-white/[0.06] hover:bg-white/[0.06] hover:text-[#908caa]'
+                  }`}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
         <ZoneSeparator />
 
