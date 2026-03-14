@@ -53,6 +53,9 @@ export function useAnimation(
   // Flag to interrupt an in-progress play loop
   const playingRef = useRef(false);
 
+  // Generation counter — incremented on reset to invalidate stale callbacks
+  const generationRef = useRef(0);
+
   // Keep rendererType stable across re-renders
   const rendererTypeRef = useRef(rendererType);
   useEffect(() => {
@@ -126,14 +129,16 @@ export function useAnimation(
         const isBarChart = rendererTypeRef.current === 'bar-chart';
         const isBoxSwap = rendererTypeRef.current === 'box-swap';
 
-        // Trigger sound effect for this step (skip if unmounted)
-        if (playingRef.current || !s.isPlaying) {
+        // Trigger sound effect for this step (skip if unmounted or empty array)
+        if (s.array.length > 0) {
+          const maxVal = Math.max(...s.array) || 1;
+          const idx = step.indices[0];
           lofiSounds.step({
             type: step.type,
-            value: step.indices.length > 0
-              ? s.array[step.indices[0]] / Math.max(...s.array)
+            value: idx != null && idx < s.array.length
+              ? s.array[idx] / maxVal
               : 0.5,
-            values: step.values?.map(v => v / Math.max(...s.array)),
+            values: step.values?.map(v => v / maxVal),
           });
         }
 
@@ -158,8 +163,12 @@ export function useAnimation(
           stateRef.current = preSwap;
 
           function animateFrame() {
+            if (!playingRef.current && !stateRef.current.isPlaying) {
+              resolve(stateRef.current);
+              return;
+            }
             const result = getCtx();
-            if (!result) return;
+            if (!result) { resolve(stateRef.current); return; }
             const { ctx, w, h } = result;
 
             const frame = frames[frameIdx];
@@ -169,7 +178,6 @@ export function useAnimation(
             if (frameIdx < frames.length) {
               requestAnimationFrame(animateFrame);
             } else {
-              // Commit the swap to state
               const next = applyStep(stateRef.current, step);
               setState(next);
               stateRef.current = next;
@@ -193,12 +201,12 @@ export function useAnimation(
           stateRef.current = preSwap;
 
           function animateBoxFrame() {
-            if (!playingRef.current && stateRef.current.isPlaying) {
-              // Unmounted — bail
+            if (!playingRef.current && !stateRef.current.isPlaying) {
+              resolve(stateRef.current);
               return;
             }
             const result = getCtx();
-            if (!result) return;
+            if (!result) { resolve(stateRef.current); return; }
             const { ctx, w, h } = result;
 
             const progress = progressFrames[frameIdx];
@@ -268,8 +276,10 @@ export function useAnimation(
       }
     }
 
+    const gen = generationRef.current;
+
     async function runLoop() {
-      while (playingRef.current) {
+      while (playingRef.current && generationRef.current === gen) {
         const s = stateRef.current;
         if (s.currentStep >= s.steps.length) {
           playingRef.current = false;
@@ -280,8 +290,8 @@ export function useAnimation(
         const step = s.steps[s.currentStep];
         await executeStep(step, s.speed);
 
-        // Check if we were stopped (unmount or pause) during the step
-        if (!playingRef.current) break;
+        // Check if we were stopped (unmount, pause, or reset) during the step
+        if (!playingRef.current || generationRef.current !== gen) break;
 
         if (stateRef.current.isDone) {
           playingRef.current = false;
@@ -331,6 +341,7 @@ export function useAnimation(
   const resetAnimation = useCallback(
     (newSize?: number) => {
       playingRef.current = false;
+      generationRef.current++;
       const size = newSize ?? stateRef.current.array.length;
       const fresh = reset(size, stateRef.current.speed, rendererTypeRef.current, null);
       setState(fresh);
