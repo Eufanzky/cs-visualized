@@ -9,7 +9,8 @@
       "colors",
       "canvas-utils",
       "sounds",
-      "animation-engine"
+      "animation-engine",
+      "maze-renderer"
     ],
     "animation": "a-star.js"
   },
@@ -29,6 +30,14 @@
       "type": "button",
       "id": "btnReset",
       "label": "Reset"
+    },
+    {
+      "type": "view-toggle",
+      "id": "btnView",
+      "label": "&#9678; Graph"
+    },
+    {
+      "type": "separator"
     },
     {
       "type": "separator"
