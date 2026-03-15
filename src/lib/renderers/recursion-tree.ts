@@ -128,7 +128,17 @@ export function drawRecursionTree(
       const bw = 22;
       const bh = 12;
       ctx.beginPath();
-      ctx.roundRect(badgeX - bw / 2, badgeY - bh / 2, bw, bh, 4);
+      const bx = badgeX - bw / 2, by = badgeY - bh / 2, br = 4;
+      ctx.moveTo(bx + br, by);
+      ctx.lineTo(bx + bw - br, by);
+      ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + br);
+      ctx.lineTo(bx + bw, by + bh - br);
+      ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - br, by + bh);
+      ctx.lineTo(bx + br, by + bh);
+      ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - br);
+      ctx.lineTo(bx, by + br);
+      ctx.quadraticCurveTo(bx, by, bx + br, by);
+      ctx.closePath();
       ctx.fillStyle = COLORS.swapping + '33';
       ctx.fill();
       ctx.strokeStyle = COLORS.swapping;

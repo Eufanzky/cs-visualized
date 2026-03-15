@@ -56,6 +56,15 @@ export function drawBoxSwap(
 
   ctx.clearRect(0, 0, width, height);
 
+  if (n === 0) {
+    ctx.fillStyle = COLORS.textMuted;
+    ctx.font = '11px JetBrains Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('n=0  |  empty', 40, 24);
+    return;
+  }
+
   const layout = getLayout(width, height, n);
   const { padding, boxGap, boxWidth, boxHeight, radius, startX, boxY, arcHeight } = layout;
 

@@ -115,7 +115,7 @@ function drawTreeFallback(
   const levels = Math.floor(Math.log2(n)) + 1;
   const levelH = usableH / levels;
 
-  const NODE_RADIUS = Math.min(22, levelH * 0.3);
+  const NODE_RADIUS = Math.max(4, Math.min(22, levelH * 0.3));
 
   // Compute node x-positions using a simple BFS layout
   interface NodePos { x: number; y: number }

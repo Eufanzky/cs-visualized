@@ -105,6 +105,7 @@ function drawStatusLine(
 
 /** Interpolate between two hex colors. t in [0, 1]. */
 function lerpColor(c1: string, c2: string, t: number): string {
+  if (!c1.startsWith('#') || !c2.startsWith('#') || c1.length < 7 || c2.length < 7) return c1;
   const r1 = parseInt(c1.slice(1, 3), 16);
   const g1 = parseInt(c1.slice(3, 5), 16);
   const b1 = parseInt(c1.slice(5, 7), 16);
@@ -360,7 +361,7 @@ function drawMultilayerScene(
   const nodePositions: Array<Array<{ x: number; y: number }>> = [];
 
   for (let l = 0; l < numLayers; l++) {
-    const x = pad + (l / (numLayers - 1)) * diagramW;
+    const x = numLayers <= 1 ? pad + diagramW / 2 : pad + (l / (numLayers - 1)) * diagramW;
     layerX.push(x);
     const nodes = layers[l].nodes;
     const count = nodes.length;

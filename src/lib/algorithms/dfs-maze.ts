@@ -174,7 +174,7 @@ function dfsSolve(
 
     for (const n of neighbors) {
       const nk = key(n.r, n.c);
-      parent.set(nk, ck);
+      if (!parent.has(nk)) parent.set(nk, ck);
       stack.push(n);
 
       if (nk !== goalKey) {

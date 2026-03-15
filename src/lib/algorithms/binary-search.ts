@@ -12,6 +12,10 @@ import type { AnimationStep } from '../animation-engine';
  *   - done     → the target was found (or confirmed absent)
  */
 export function generateBinarySearchSteps(arr: number[]): AnimationStep[] {
+  if (arr.length === 0) {
+    return [{ type: 'done', indices: [], description: 'Empty array — nothing to search.' }];
+  }
+
   const steps: AnimationStep[] = [];
   const n = arr.length;
 

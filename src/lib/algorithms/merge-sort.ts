@@ -14,6 +14,10 @@ import type { AnimationStep } from '../animation-engine';
  *   - done     → the entire array is sorted
  */
 export function generateMergeSortSteps(arr: number[]): AnimationStep[] {
+  if (arr.length === 0) {
+    return [{ type: 'done', indices: [], description: 'Empty array — nothing to sort.' }];
+  }
+
   const steps: AnimationStep[] = [];
   const a = [...arr];
 

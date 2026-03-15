@@ -57,6 +57,8 @@ function drawDPGridScene(
     return;
   }
 
+  if (!grid[0]) { drawStatusLine(ctx, width, state); return; }
+
   const numRows = grid.length;
   const numCols = grid[0].length;
 

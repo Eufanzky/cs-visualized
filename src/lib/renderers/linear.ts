@@ -220,6 +220,12 @@ function drawLinearFallback(
 ): void {
   const arr = state.array.slice(0, 10);
   const n = arr.length;
+
+  if (n === 0) {
+    drawStatusLine(ctx, width, state, 'linear');
+    return;
+  }
+
   const padding = 48;
   const usableW = width - padding * 2;
   const blockW = Math.min(70, usableW / n - 4);

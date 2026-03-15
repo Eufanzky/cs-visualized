@@ -22,6 +22,15 @@ export function drawColorSpectrum(
 
   ctx.clearRect(0, 0, width, height);
 
+  if (n === 0) {
+    ctx.fillStyle = COLORS.textMuted;
+    ctx.font = '11px JetBrains Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText('n=0  |  empty', 40, 24);
+    return;
+  }
+
   const padding = 40;
   const gap = 1;
   const totalGaps = (n - 1) * gap;
